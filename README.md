@@ -1,1 +1,3 @@
-# Set of private tool modules  
+# Set of tools to be used in projects.
+
+These tools are...

@@ -6,7 +6,10 @@ from typing import Union, List, Tuple, Dict, Literal, Any
 from collections.abc import Iterable
 
 FIXED_PERCENTAGE_CATEGORY = 0.1
-LIST_FLOAT_TYPES = [np.float32]
+LIST_INTEGERS_TYPES = [int, np.int_, np.intc, np.intp,
+                       np.int8, np.int16, np.int32, np.int64,
+                       np.uint8, np.uint16, np.uint32, np.uint64]
+LIST_FLOAT_TYPES = [float, np.float_, np.float16, np.float32, np.float64]
 
 
 def update_default_dict(default_dict: dict, new_dict: dict) -> dict:
@@ -46,16 +49,16 @@ def format_dict_json(input_dict: dict) -> dict:
     """
     new_dict = {}
     for key, value in input_dict.items():
-        if isinstance(value, (np.float_, np.float16, np.float32, np.float64)):
+        value_type = type(value)
+        if value_type in LIST_FLOAT_TYPES:
             new_dict[key] = float(value)
-        elif isinstance(value, (np.int_, np.intc, np.intp, np.int8, np.int16, np.int32, np.int64, np.uint8,
-                                np.uint16, np.uint32, np.uint64)):
+        elif value_type in LIST_INTEGERS_TYPES:
             new_dict[key] = int(value)
-        elif isinstance(value, ndarray):
+        elif value_type is ndarray:
             new_dict[key] = value.tolist()
-        elif isinstance(value, dict):
+        elif value_type is dict:
             new_dict[key] = format_dict_json(value)
-        elif isinstance(value, list):
+        elif value_type is list:
             new_dict[key] = value
         else:
             raise TypeError('Unsupported type for value in dict')
@@ -90,14 +93,5 @@ def reduce_df_size(input_df: DataFrame):
     for column in input_df.select_dtypes(include='float64').columns:
         # Applies the regular downcast function to float type
         input_df[column] = to_numeric(input_df[column], downcast='float')
-
-        # TODO: Check this part, as the resolution of float32 is 1e-06 while the resolution of float 64 is 1e-15
-        # Forces the columns to downcast if the minimum and maximum values are meet (float32 has resolution of 1e-6)
-        # max_value, min_value = input_df[column].max(), input_df[column].min()
-        # for float_type in LIST_FLOAT_TYPES:
-        #     type_info = np.finfo(float_type)
-        #     if min_value >= type_info.min and max_value <= type_info.max:
-        #         input_df[column] = input_df[column].astype(float_type)
-        #         break
 
     return input_df

@@ -5,7 +5,7 @@ from abc import ABC
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
 
-from personal_tools.utils import Union
+from tools.utils import Union
 
 
 class CpuParallel(ABC):
@@ -73,7 +73,7 @@ class CpuParallel(ABC):
 
 
 if __name__ == '__main__':
-    from personal_tools.dump_functions import random_generation_wait_arg, random_generation_wait_param
+    from tools.dump_functions import random_generation_wait_arg, random_generation_wait_param
 
     low_value = 2
     high_value = 5.1

@@ -7,7 +7,7 @@ from numpy import squeeze, ndarray, load as load_np, save as save_np, random
 from json import load as load_json, dump as save_json
 from scipy.io import loadmat as load_mat, savemat as save_mat
 
-from personal_tools.utils import update_default_dict, squeeze_dict, Union, format_dict_json, reduce_df_size
+from tools.utils import update_default_dict, squeeze_dict, Union, format_dict_json, reduce_df_size
 
 DEFAULT_CSV_PARAMS = {'index': False, }
 DEFAULT_JSON_PARAMS = {'indent': 2, }
@@ -17,13 +17,14 @@ DEFAULT_MAT_PARAMS = {}
 PRETTY_PRINT_OPTION = True
 
 
-def load(file_path: Union[Path, str], squeeze_arrays: bool = True, downcast_type: bool = False,
-         **kwargs) -> Union[dict, DataFrame, ndarray]:
+def load(file_path: Union[Path, str], squeeze_arrays: bool = True, matlab_keys: bool = False,
+         downcast_type: bool = False, **kwargs) -> Union[dict, DataFrame, ndarray]:
     """
     Load main types of data used in our work.
 
     :param file_path: File path
     :param squeeze_arrays: Option to squeeze arrays within the dict (Used for numpy array and .mat files)
+    :param matlab_keys: Option to remove the Matlab parameters from the dict (Used for .mat files)
     :param downcast_type: Option to apply a downcast function to the data (Used for DataFrame)
     :param kwargs: Parameters of the respective load function
     :return: Data loaded
@@ -44,6 +45,9 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, downcast_type
         data = load_mat(file_name=str(file_path), **kwargs)
         if squeeze_arrays:
             data = squeeze_dict(data)
+        if not matlab_keys:
+            for key in ['__header__', '__version__', '__globals__']:
+                data.pop(key, None)
     elif '.npy' in str(file_path) or '.npz' in str(file_path):
         data = load_np(file=file_path, **kwargs)
         if squeeze_arrays:

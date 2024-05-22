@@ -3,17 +3,20 @@ from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.font_manager import FontProperties, get_font_names
+from matplotlib.legend import Legend
 from pathlib import Path
-from seaborn import set as set_sea, color_palette, set_palette, axes_style
+from seaborn import set as set_sea, color_palette, set_palette
+from numpy import ndarray, linspace
 
-from personal_tools.in_out import get_or_create_folder
-from personal_tools.utils import Union, Tuple, List, Literal
+from tools.in_out import get_or_create_folder
+from tools.utils import Union, Tuple, List, Literal
 
 # Default figure/axes parameters
 DEF_FIG_SIZE = (8, 5)
 DEF_VIEW_DPI = 300
 DEF_SAVE_DPI = 600
 DEF_NUM_ROW_COL = [1, 1]
+DEF_NUM_TICKS = 10
 
 # Default font parameters
 SYSTEM_FONTS = sorted(get_font_names())
@@ -37,6 +40,33 @@ LIST_LINE_STYLES = {'solid': (0, ()), 'dashed': (0, (5, 5)), 'dotted': (0, (1, 1
                     'loosely dashed': (0, (5, 10)), 'densely dashed': (0, (5, 1)), 'loosely dotted': (0, (1, 10)),
                     'loosely dashdotdotted': (0, (3, 10, 1, 10, 1, 10)),
                     'densely dashdotdotted': (0, (3, 1, 1, 1, 1, 1))}
+
+
+def get_font_property(name: str = DEF_FONT_NAME, style: str = DEF_FONT_STYLE[0],
+                      weight: str = DEF_FONT_WEIGHTS[4],
+                      size: Union[str, int] = DEF_FONT_SIZE[3]) -> FontProperties:
+    """
+    Get a font property to be used as input parameter in plot functions.
+
+    :param name: Font name
+    :param style: Font style
+    :param weight: Font weight
+    :param size: Font size
+    :return: Font created
+    """
+    if name not in SYSTEM_FONTS:
+        raise ValueError('Font "{}" not installed in the system\n'
+                         'List of available fonts: {}'.format(name, SYSTEM_FONTS))
+
+    if style not in DEF_FONT_STYLE:
+        raise ValueError('Font style "{}" not available\n'
+                         'List of available styles: {}'.format(style, DEF_FONT_STYLE))
+
+    return FontProperties(family=name, style=style, weight=weight, size=size)
+
+
+DEFAULT_AXIS_PROPERTY = get_font_property(weight=DEF_FONT_WEIGHTS[4], size=DEF_FONT_SIZE[3])
+DEFAULT_LEGEND_PROPERTY = get_font_property(weight=DEF_FONT_WEIGHTS[4], size=DEF_FONT_SIZE[1])
 
 
 def get_figure(fig_id: Union[int, str] = None, size: Tuple[float, float] = DEF_FIG_SIZE,
@@ -128,6 +158,103 @@ def set_labels_weight(axis: Axes, weight=DEF_FONT_WEIGHTS[4]):
     [label.set_fontweight(weight) for label in labels]
 
 
+def set_labels(axis: Axes, x_label: str = None, y_label: str = None, title: str = None,
+               font_property: FontProperties = DEFAULT_AXIS_PROPERTY):
+    """
+    Set all axis labels with the same font properties.
+
+    :param axis: Axis
+    :param x_label: Label of x-axis
+    :param y_label: Label of y-axis
+    :param title: Title of axis
+    :param font_property: Font properties
+    :return: None
+    """
+    if x_label:
+        axis.set_xlabel(xlabel=x_label, fontproperties=font_property)
+    if y_label:
+        axis.set_ylabel(ylabel=y_label, fontproperties=font_property)
+    if title:
+        axis.set_title(label=title, fontproperties=font_property)
+
+
+def set_ticks(axis: Axes, x_lims: Union[list, ndarray] = None, y_lims: Union[list, ndarray] = None,
+              x_ticks: Union[int, float, list, ndarray] = None, y_ticks: Union[int, float, list, ndarray] = None,
+              x_ticks_labels: Union[int, float, list, ndarray] = None,
+              y_ticks_labels: Union[int, float, list, ndarray] = None,
+              font_properties: FontProperties = DEFAULT_AXIS_PROPERTY):
+    """
+    Set both axis limits, ticks and tick labels.
+    If the limits are not provided, use the axis limits.
+    If both ticks and tick labels and not provided, creating 10 points between the limits.
+    If only the ticks are provided, replicate the ticks for the labels.
+    Does not accept ticks labels only.
+    Uses the same font properties for both axes.
+
+    :param axis: Axes
+    :param x_lims: Limits along x-axis
+    :param y_lims: Limits along y-axis
+    :param x_ticks: X-axis ticks
+    :param y_ticks: Y-axis ticks
+    :param x_ticks_labels: X-axis ticks labels
+    :param y_ticks_labels: Y-axis ticks labels
+    :param font_properties: Font properties
+    :return: None
+    """
+    # Set x-axis limits
+    if x_lims is None:
+        x_lims = axis.get_xlim()
+    else:
+        axis.set_xlim(*x_lims)
+
+    # Set y-axis limits
+    if y_lims is None:
+        y_lims = axis.get_ylim()
+    else:
+        axis.set_ylim(*y_lims)
+
+    # Configure and set x-axis ticks and ticks labels
+    if x_ticks is None and x_ticks_labels is None:
+        x_ticks = linspace(x_lims[0], x_lims[1], DEF_NUM_TICKS)
+        x_ticks_labels = x_ticks
+    elif x_ticks_labels is None:
+        x_ticks_labels = x_ticks
+    elif x_ticks is None:
+        raise ValueError('If x_ticks_labels is provided, requires also x_ticks')
+    axis.set_xticks(x_ticks)
+    axis.set_xticklabels(x_ticks_labels, fontproperties=font_properties)
+
+    # Configure and set x-axis ticks and ticks labels
+    if y_ticks is None and y_ticks_labels is None:
+        y_ticks = linspace(y_lims[0], y_lims[1], DEF_NUM_TICKS)
+        y_ticks_labels = y_ticks
+    elif y_ticks_labels is None:
+        y_ticks_labels = y_ticks
+    elif y_ticks is None:
+        raise ValueError('If y_ticks_labels is provided, requires also y_ticks')
+    axis.set_yticks(y_ticks)
+    axis.set_yticklabels(y_ticks_labels, fontproperties=font_properties)
+
+
+def set_legend(axis: Axes, position: str = 'best', title: str = None,
+               font_properties: FontProperties = DEFAULT_LEGEND_PROPERTY, **kwargs) -> Legend:
+    """
+    Set axis legend and legend title, both using the same font properties.
+
+    :param axis: Axis
+    :param position: Legend position
+    :param title: Legend title
+    :param font_properties: Font properties
+    :param kwargs: Keyword arguments
+    :return:
+    """
+    # TODO: Add option for manual handles
+    legend = axis.legend(loc=position, prop=font_properties, **kwargs)
+    legend.set_title(title=title, prop=font_properties)
+
+    return legend
+
+
 def save_fig(fig_path: Union[Path, str], fig: Figure, bbox_inches='tight', dpi=DEF_SAVE_DPI):
     """
     Save figure
@@ -183,29 +310,6 @@ def update_style(new_params: Union[None, dict] = None):
     set_sea(**new_params)
 
 
-def get_font_property(name: str = DEF_FONT_NAME, style: str = DEF_FONT_STYLE[0],
-                      weight: str = DEF_FONT_WEIGHTS[4],
-                      size: Union[str, int] = DEF_FONT_SIZE[3]) -> FontProperties:
-    """
-    Get a font property to be used as input parameter in plot functions.
-
-    :param name: Font name
-    :param style: Font style
-    :param weight: Font weight
-    :param size: Font size
-    :return: Font created
-    """
-    if name not in SYSTEM_FONTS:
-        raise ValueError('Font "{}" not installed in the system\n'
-                         'List of available fonts: {}'.format(name, SYSTEM_FONTS))
-
-    if style not in DEF_FONT_STYLE:
-        raise ValueError('Font style "{}" not available\n'
-                         'List of available styles: {}'.format(style, DEF_FONT_STYLE))
-
-    return FontProperties(family=name, style=style, weight=weight, size=size)
-
-
 def get_list_line_styles(num_styles: int = None):
     """
     Return a dict containing the line styles names and values. If no number of line is provided, return the whole dict
@@ -218,29 +322,6 @@ def get_list_line_styles(num_styles: int = None):
         return LIST_LINE_STYLES
     else:
         return {key: value for (key, value), _ in zip(LIST_LINE_STYLES.items(), range(0, num_styles))}
-
-
-def set_axes_labels(axis: Axes, x_label: str, y_label: str, title: str = None, font_property: FontProperties = None,
-                    **kwargs):
-    """
-    Set the axis labels, both x and y, and title (optional).
-    If the font property is not set, use the default font properties.
-
-    :param axis: Axis object
-    :param x_label: X label
-    :param y_label: Y label
-    :param title: Axis title (Optional)
-    :param font_property: Font properties (Optional)
-    :param kwargs:
-    :return:
-    """
-    if font_property is None:
-        font_property = get_font_property()
-    axis.set_xlabel(xlabel=x_label, fontproperties=font_property, **kwargs)
-    axis.set_ylabel(ylabel=y_label, fontproperties=font_property, **kwargs)
-
-    if title is not None:
-        axis.set_title(title=title, fontproperties=font_property, **kwargs)
 
 
 if __name__ == '__main__':
