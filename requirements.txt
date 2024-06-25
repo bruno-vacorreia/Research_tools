@@ -5,3 +5,6 @@ pandas
 seaborn
 pyarrow
 rich
+xlrd
+openpyxl
+odfpy

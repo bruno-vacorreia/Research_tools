@@ -2,7 +2,7 @@ from pathlib import Path
 from os.path import exists, isfile
 from os import makedirs
 from pprint import pformat
-from pandas import read_csv, DataFrame
+from pandas import read_csv, DataFrame, read_excel
 from numpy import squeeze, ndarray, load as load_np, save as save_np, random
 from json import load as load_json, dump as save_json
 from scipy.io import loadmat as load_mat, savemat as save_mat
@@ -14,6 +14,7 @@ DEFAULT_JSON_PARAMS = {'indent': 2, }
 DEFAULT_PRETTY_PRINT_JSON_PARAMS = {'indent': 2, 'width': 120, 'compact': True, 'sort_dicts': False}
 DEFAULT_NPY_PARAMS = {}
 DEFAULT_MAT_PARAMS = {}
+DEFAULT_EXCEL_PARAMS = {'header': True, 'index': False, }
 PRETTY_PRINT_OPTION = True
 
 
@@ -24,7 +25,8 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, matlab_keys: 
 
     :param file_path: File path
     :param squeeze_arrays: Option to squeeze arrays within the dict (Used for numpy array and .mat files)
-    :param matlab_keys: Option to remove the Matlab parameters from the dict (Used for .mat files)
+    :param matlab_keys: Option to remove the Matlab parameters from the dict (Used for .mat files).
+    True if the data should keep the Matlab information.
     :param downcast_type: Option to apply a downcast function to the data (Used for DataFrame)
     :param kwargs: Parameters of the respective load function
     :return: Data loaded
@@ -32,26 +34,29 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, matlab_keys: 
     if isinstance(file_path, str):
         file_path = Path(file_path)
 
-    # TODO: Add option for Excel files
-    if '.json' in str(file_path):
+    if file_path.suffix in ['.json']:
         file = open(file_path, 'r')
         data = load_json(file, **kwargs)
         file.close()
-    elif '.csv' in str(file_path):
+    elif file_path.suffix in ['.csv']:
         data = read_csv(filepath_or_buffer=file_path, **kwargs)
         if downcast_type:
             data = reduce_df_size(data)
-    elif '.mat' in str(file_path):
+    elif file_path.suffix in ['.mat']:
         data = load_mat(file_name=str(file_path), **kwargs)
         if squeeze_arrays:
             data = squeeze_dict(data)
         if not matlab_keys:
             for key in ['__header__', '__version__', '__globals__']:
                 data.pop(key, None)
-    elif '.npy' in str(file_path) or '.npz' in str(file_path):
+    elif file_path.suffix in ['.npy', '.npz']:
         data = load_np(file=file_path, **kwargs)
         if squeeze_arrays:
             data = squeeze(data)
+    elif file_path.suffix in ['.xlsx', '.xls', '.ods']:
+        data = read_excel(io=file_path, **kwargs)
+        if downcast_type:
+            data = reduce_df_size(data)
     else:
         raise TypeError('Load function not implemented for "{}" type'.format(file_path.suffix))
 
@@ -73,8 +78,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray],
     if isinstance(file_path, str):
         file_path = Path(file_path)
 
-    # TODO: Add option for Excel files
-    if '.json' in str(file_path):
+    if file_path.suffix in ['.json']:
         data = format_dict_json(data)
         file = open(file_path, 'w')
         if not json_pretty_print:
@@ -84,12 +88,14 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray],
             data_str = data_str.replace("'", '"')
             file.write(data_str)
         file.close()
-    elif '.csv' in str(file_path):
+    elif file_path.suffix in ['.csv']:
         data.to_csv(path_or_buf=file_path, **update_default_dict(DEFAULT_CSV_PARAMS, kwargs))
-    elif '.mat' in str(file_path):
+    elif file_path.suffix in ['.mat']:
         save_mat(file_name=file_path, mdict=data, **update_default_dict(DEFAULT_MAT_PARAMS, kwargs))
-    elif '.npy' in str(file_path) or '.npz' in str(file_path):
+    elif file_path.suffix in ['.npy', '.npz']:
         save_np(file=file_path, arr=data, **update_default_dict(DEFAULT_NPY_PARAMS, kwargs))
+    elif file_path.suffix in ['.xlsx', '.xls', '.ods']:
+        data.to_excel(excel_writer=file_path, **update_default_dict(DEFAULT_EXCEL_PARAMS, kwargs))
     else:
         raise TypeError('Save function not implemented for "{}" type'.format(file_path.suffix))
 
@@ -113,7 +119,7 @@ if __name__ == '__main__':
     save_option = True
     load_option = True
     error_invalid_type_option = False
-    reduce_function_option = True
+    reduce_function_option = False
 
     # Save function for different data types
     if save_option:
@@ -131,6 +137,12 @@ if __name__ == '__main__':
         df = DataFrame.from_dict(data=dump_dict)
         save(Path('../dump_data/data_example.csv'), data=df)
         print('Finished saving as csv')
+        save(Path('../dump_data/data_example.xls'), data=df)
+        print('Finished saving as xls')
+        save(Path('../dump_data/data_example.xlsx'), data=df)
+        print('Finished saving as xlsx')
+        save(Path('../dump_data/data_example.ods'), data=df)
+        print('Finished saving as ods')
 
     # Load function for different data types
     if load_option:
@@ -140,8 +152,14 @@ if __name__ == '__main__':
         print('Finished loading as json')
         file_mat = load('../dump_data/data_example.mat', squeeze_arrays=True)
         print('Finished loading as Matlab file')
-        file_df = load('../dump_data/data_example.csv')
+        file_df = load('../dump_data/data_example.csv', downcast_type=True)
         print('Finished loading as csv')
+        file_excel = load('../dump_data/data_example.xls', downcast_type=True)
+        print('Finished loading as xls')
+        file_excel2 = load('../dump_data/data_example.xlsx', downcast_type=True)
+        print('Finished loading as xlsx')
+        file_excel3 = load('../dump_data/data_example.ods', downcast_type=True)
+        print('Finished loading as ods')
 
         # Error example for not supported data
         if error_invalid_type_option:
