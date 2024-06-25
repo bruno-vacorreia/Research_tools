@@ -86,6 +86,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray],
         else:
             data_str = pformat(data, **update_default_dict(DEFAULT_PRETTY_PRINT_JSON_PARAMS, kwargs))
             data_str = data_str.replace("'", '"')
+            data_str = data_str.replace('None', 'null')
             file.write(data_str)
         file.close()
     elif file_path.suffix in ['.csv']:
@@ -175,8 +176,3 @@ if __name__ == '__main__':
 
         # df.to_parquet(path='../dump_data/Taxi_Dataset.parquet')
         # df = pd.read_parquet('../dump_data/Taxi_Dataset.parquet')
-
-
-
-
-

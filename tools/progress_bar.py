@@ -14,6 +14,7 @@ def create_progress_bar() -> Progress:
                         BarColumn(),
                         "[progress.percentage]{task.percentage:>3.0f}%",
                         TimeElapsedColumn(),
+                        refresh_per_second=20,
                         speed_estimate_period=20, transient=False)
     return prog_bar
 

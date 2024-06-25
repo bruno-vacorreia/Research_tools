@@ -1,15 +1,17 @@
-from matplotlib.pyplot import figure, show
+from matplotlib.pyplot import figure, show, subplots
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.font_manager import FontProperties, get_font_names
 from matplotlib.legend import Legend
+from matplotlib.lines import Line2D
+from mpl_toolkits.mplot3d import Axes3D
 from pathlib import Path
 from seaborn import set as set_sea, color_palette, set_palette
 from numpy import ndarray, linspace
 
 from tools.in_out import get_or_create_folder
-from tools.utils import Union, Tuple, List, Literal
+from tools.utils import Union, Tuple, List, Literal, update_default_dict
 
 # Default figure/axes parameters
 DEF_FIG_SIZE = (8, 5)
@@ -20,7 +22,7 @@ DEF_NUM_TICKS = 10
 
 # Default font parameters
 SYSTEM_FONTS = sorted(get_font_names())
-DEF_FONT_NAME = 'Calibri'
+DEF_FONT_NAME = 'Calibri' if 'Calibri' in SYSTEM_FONTS else SYSTEM_FONTS[0]
 DEF_FONT_WEIGHTS = ['light', 'normal', 'regular', 'demibold', 'bold', 'extra bold']
 DEF_FONT_STYLE = ['normal', 'italic']
 DEF_FONT_SIZE = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
@@ -35,11 +37,16 @@ set_sea(**DEF_SEABORN_STYLE)
 set_palette(palette=DEF_SEABORN_STYLE['palette'], n_colors=DEF_NUM_COLORS,
             color_codes=DEF_SEABORN_STYLE['color_codes'])
 
-# Default line styles
 LIST_LINE_STYLES = {'solid': (0, ()), 'dashed': (0, (5, 5)), 'dotted': (0, (1, 1)), 'dashdotted': (0, (3, 5, 1, 5)),
                     'loosely dashed': (0, (5, 10)), 'densely dashed': (0, (5, 1)), 'loosely dotted': (0, (1, 10)),
                     'loosely dashdotdotted': (0, (3, 10, 1, 10, 1, 10)),
                     'densely dashdotdotted': (0, (3, 1, 1, 1, 1, 1))}
+"""Default line styles"""
+LIST_MARKERS = list(Line2D.filled_markers)[1:]
+"""Default list of markers"""
+DEF_SHRINK_LEGEND = {'borderpad': 0.2, 'labelspacing': 0.3, 'handletextpad': 0.3, 'borderaxespad': 0.3,
+                     'columnspacing': 0.8}
+"""Parameters to reduce the space between handles in figure's legend"""
 
 
 def get_font_property(name: str = DEF_FONT_NAME, style: str = DEF_FONT_STYLE[0],
@@ -50,7 +57,7 @@ def get_font_property(name: str = DEF_FONT_NAME, style: str = DEF_FONT_STYLE[0],
 
     :param name: Font name
     :param style: Font style
-    :param weight: Font weight
+    :param weight: Font font_property
     :param size: Font size
     :return: Font created
     """
@@ -83,7 +90,7 @@ def get_figure(fig_id: Union[int, str] = None, size: Tuple[float, float] = DEF_F
 
 
 def add_subplot(fig: Figure, num_rows: int = DEF_NUM_ROW_COL[0], num_columns: int = DEF_NUM_ROW_COL[1],
-                index: int = 1) -> Axes:
+                index: int = 1, **kwargs) -> Axes:
     """
     Wrapper for insertion of one axis inside a figure.
 
@@ -93,15 +100,31 @@ def add_subplot(fig: Figure, num_rows: int = DEF_NUM_ROW_COL[0], num_columns: in
     :param index: Axis index
     :return: New axis inserted in the figure
     """
-    pos = int('{}{}{}'.format(num_rows, num_columns, index))
+    pos = int('{}{}{}'.format(num_rows, num_columns, index), **kwargs)
 
     return fig.add_subplot(pos)
+
+
+def add_subplot_3d(fig: Figure, num_rows: int = DEF_NUM_ROW_COL[0], num_columns: int = DEF_NUM_ROW_COL[1],
+                   index: int = 1) -> Axes3D:
+    """
+    Wrapper for insertion of one 3-D axis inside a figure.
+
+    :param fig: Figure object to insert the axis
+    :param num_rows: Number of rows
+    :param num_columns: Number of columns
+    :param index: Axis index
+    :return: New axis inserted in the figure
+    """
+    pos = int('{}{}{}'.format(num_rows, num_columns, index))
+
+    return fig.add_subplot(pos, projection='3d')
 
 
 def add_subplots(fig: Figure, num_rows: int = DEF_NUM_ROW_COL[0],
                  num_columns: int = DEF_NUM_ROW_COL[1]) -> List[Axes]:
     """
-    Wrapper for insertion of all axis, defined by number of rows and columns, inside a figure
+    Wrapper for insertion of all axis, defined by number of rows and columns, inside a figure.
 
     :param fig: Figure object to insert the axis
     :param num_rows: Number of rows
@@ -119,7 +142,7 @@ def add_subplots(fig: Figure, num_rows: int = DEF_NUM_ROW_COL[0],
 
 def add_sub_axis(axis: Axes, position: Tuple[float, float, float, float], face_color='lightgray') -> Axes:
     """
-    Create a sub-axis
+    Create a sub-axis.
 
     :param axis: Original axis
     :param position: Position of the new axis (x0, y0, width, height)
@@ -146,16 +169,16 @@ def get_twin(axis: Axes, axis_option: Literal['x', 'y'] = 'x') -> Axes:
                          'Choose "x" of "y"')
 
 
-def set_labels_weight(axis: Axes, weight=DEF_FONT_WEIGHTS[4]):
+def set_tick_labels_property(axis: Axes, font_property: FontProperties = DEFAULT_AXIS_PROPERTY):
     """
     Set all tick labels' (x and y) font weights.
 
     :param axis: Axis
-    :param weight: Weight option
+    :param font_property: Weight option
     :return:
     """
     labels = axis.get_xticklabels() + axis.get_yticklabels()
-    [label.set_fontweight(weight) for label in labels]
+    [label.set_fontproperties(font_property) for label in labels]
 
 
 def set_labels(axis: Axes, x_label: str = None, y_label: str = None, title: str = None,
@@ -237,7 +260,7 @@ def set_ticks(axis: Axes, x_lims: Union[list, ndarray] = None, y_lims: Union[lis
 
 
 def set_legend(axis: Axes, position: str = 'best', title: str = None,
-               font_properties: FontProperties = DEFAULT_LEGEND_PROPERTY, **kwargs) -> Legend:
+               font_properties: FontProperties = DEFAULT_LEGEND_PROPERTY, shrink=False, **kwargs) -> Legend:
     """
     Set axis legend and legend title, both using the same font properties.
 
@@ -245,10 +268,13 @@ def set_legend(axis: Axes, position: str = 'best', title: str = None,
     :param position: Legend position
     :param title: Legend title
     :param font_properties: Font properties
+    :param shrink: Option to reduce the space between legend name, makers, pads, etc.
     :param kwargs: Keyword arguments
     :return:
     """
     # TODO: Add option for manual handles
+    if shrink:
+        kwargs = update_default_dict(DEF_SHRINK_LEGEND, kwargs)
     legend = axis.legend(loc=position, prop=font_properties, **kwargs)
     legend.set_title(title=title, prop=font_properties)
 
@@ -324,6 +350,20 @@ def get_list_line_styles(num_styles: int = None):
         return {key: value for (key, value), _ in zip(LIST_LINE_STYLES.items(), range(0, num_styles))}
 
 
+def get_list_markers(num_markers: int = None):
+    """
+    Return a list of filled markers types. If no number of markers is provided, return the whole list defined in
+    this module.
+
+    :param num_markers: Number of markers
+    :return: List of filled markers
+    """
+    if num_markers is None or num_markers > len(LIST_MARKERS):
+        return LIST_MARKERS
+    else:
+        return LIST_MARKERS[:num_markers - 1]
+
+
 if __name__ == '__main__':
     import numpy as np
 
@@ -349,7 +389,7 @@ if __name__ == '__main__':
     font_label2 = get_font_property(weight=DEF_FONT_WEIGHTS[5])
     ax1.set_ylabel('Sin(x)', fontproperties=font_label2)
 
-    set_labels_weight(ax1)
+    set_tick_labels_property(ax1)
 
     fig1.tight_layout()
 
