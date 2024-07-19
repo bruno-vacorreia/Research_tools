@@ -7,7 +7,7 @@ from numpy import squeeze, ndarray, load as load_np, save as save_np, random
 from json import load as load_json, dump as save_json
 from scipy.io import loadmat as load_mat, savemat as save_mat
 
-from tools.utils import update_default_dict, squeeze_dict, Union, format_dict_json, reduce_df_size
+from research_tools.utils import update_default_dict, squeeze_dict, Union, format_dict_json, reduce_df_size
 
 DEFAULT_CSV_PARAMS = {'index': False, }
 DEFAULT_JSON_PARAMS = {'indent': 2, }

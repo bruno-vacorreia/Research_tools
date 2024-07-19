@@ -10,8 +10,8 @@ from pathlib import Path
 from seaborn import set as set_sea, color_palette, set_palette
 from numpy import ndarray, linspace
 
-from tools.in_out import get_or_create_folder
-from tools.utils import Union, Tuple, List, Literal, update_default_dict
+from research_tools.in_out import get_or_create_folder
+from research_tools.utils import Union, Tuple, List, Literal, update_default_dict
 
 # Default figure/axes parameters
 DEF_FIG_SIZE = (8, 5)

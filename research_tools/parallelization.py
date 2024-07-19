@@ -5,7 +5,7 @@ from abc import ABC
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
 
-from tools.utils import Union
+from research_tools.utils import Union
 
 
 class CpuParallel(ABC):
@@ -14,7 +14,7 @@ class CpuParallel(ABC):
     @classmethod
     def set_num_cores(cls, num_cores: int):
         """
-        Set the number of CPU cores to run the function parallelized
+        Set the number of CPU cores to run the function parallelized.
 
         :param num_cores: Number of CPU cores
         :return: None
@@ -73,7 +73,7 @@ class CpuParallel(ABC):
 
 
 if __name__ == '__main__':
-    from tools.dump_functions import random_generation_wait_arg, random_generation_wait_param
+    from research_tools.dump_functions import random_generation_wait_arg, random_generation_wait_param
 
     low_value = 2
     high_value = 5.1

@@ -4,7 +4,7 @@ Module containing functions for units conversion.
 from numpy import log10, ndarray, dtype, seterr
 from scipy.constants import nu2lambda, lambda2nu
 
-from tools.utils import Union, List, Any
+from research_tools.utils import Union, List, Any
 
 DEFAULT_BAUD_RATE = 12.5e9
 seterr(divide='ignore')
