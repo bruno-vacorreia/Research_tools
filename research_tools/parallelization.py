@@ -1,5 +1,5 @@
 """
-Module responsible to manage CPU cores parallelization
+Module responsible to manage CPU cores parallelization.
 """
 from abc import ABC
 from concurrent.futures import ProcessPoolExecutor

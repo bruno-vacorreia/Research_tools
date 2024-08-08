@@ -1,3 +1,6 @@
+"""
+Module containing dumb functions, used for debugging purposes.
+"""
 from numpy import random
 from time import sleep
 

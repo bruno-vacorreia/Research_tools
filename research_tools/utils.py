@@ -1,3 +1,6 @@
+"""
+Module containing utility functions for data manipulation.
+"""
 import numpy as np
 from numpy import squeeze, ndarray
 from pandas import DataFrame, to_numeric
@@ -9,7 +12,7 @@ FIXED_PERCENTAGE_CATEGORY = 0.1
 LIST_INTEGERS_TYPES = [int, np.int_, np.intc, np.intp,
                        np.int8, np.int16, np.int32, np.int64,
                        np.uint8, np.uint16, np.uint32, np.uint64]
-LIST_FLOAT_TYPES = [float, np.float_, np.float16, np.float32, np.float64]
+LIST_FLOAT_TYPES = [float, np.float16, np.float32, np.float64]
 
 
 def update_default_dict(default_dict: dict, new_dict: dict) -> dict:

@@ -1,3 +1,6 @@
+"""
+Module containing functions for input and output of data and for folder creation and paths.
+"""
 from pathlib import Path
 from os.path import exists, isfile
 from os import makedirs
@@ -18,16 +21,16 @@ DEFAULT_EXCEL_PARAMS = {'header': True, 'index': False, }
 PRETTY_PRINT_OPTION = True
 
 
-def load(file_path: Union[Path, str], squeeze_arrays: bool = True, matlab_keys: bool = False,
+def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab_keys: bool = True,
          downcast_type: bool = False, **kwargs) -> Union[dict, DataFrame, ndarray]:
     """
     Load main types of data used in our work.
 
     :param file_path: File path
     :param squeeze_arrays: Option to squeeze arrays within the dict (Used for numpy array and .mat files)
-    :param matlab_keys: Option to remove the Matlab parameters from the dict (Used for .mat files).
-    True if the data should keep the Matlab information.
-    :param downcast_type: Option to apply a downcast function to the data (Used for DataFrame)
+    :param remove_matlab_keys: Option to remove the Matlab parameters from the dict (Used for .mat files).
+    True if the data should remove the Matlab information.
+    :param downcast_type: Option to apply a downcast function to the data (Used for .csv and Excel files)
     :param kwargs: Parameters of the respective load function
     :return: Data loaded
     """
@@ -46,7 +49,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, matlab_keys: 
         data = load_mat(file_name=str(file_path), **kwargs)
         if squeeze_arrays:
             data = squeeze_dict(data)
-        if not matlab_keys:
+        if remove_matlab_keys:
             for key in ['__header__', '__version__', '__globals__']:
                 data.pop(key, None)
     elif file_path.suffix in ['.npy', '.npz']:

@@ -1,3 +1,6 @@
+"""
+Module containing functions for creation and manipulation of progress bars.
+"""
 from rich.progress import Progress, BarColumn, TaskID, TimeElapsedColumn
 
 COLOR_BAR_PER_LOOP = ['blue', 'red', 'green', 'yellow', 'cyan', 'magenta']

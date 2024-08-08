@@ -1,3 +1,6 @@
+"""
+Module containing functions for plotting.
+"""
 from matplotlib.pyplot import figure, show, subplots
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
