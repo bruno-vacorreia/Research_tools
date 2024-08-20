@@ -1,7 +1,7 @@
 """
 Module containing functions for plotting.
 """
-from matplotlib.pyplot import figure, show, subplots
+from matplotlib.pyplot import figure, show, subplots, close
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_pdf import PdfPages

@@ -1,3 +1,1 @@
-# Set of tools to be used in projects.
-
-These tools are...
+# Set of tools to be used in research projects.

@@ -3,8 +3,8 @@ Module containing functions for creation and manipulation of progress bars.
 """
 from rich.progress import Progress, BarColumn, TaskID, TimeElapsedColumn
 
-COLOR_BAR_PER_LOOP = ['blue', 'red', 'green', 'yellow', 'cyan', 'magenta']
-"""List of colors for each nested loop (Working for up to 6 loops)"""
+COLOR_BAR_PER_LOOP = ['blue', 'red', 'green', 'yellow', 'cyan', 'magenta', 'gray', 'lightcoral']
+"""List of colors for each nested loop (Working for up to 8 loops)"""
 
 
 def create_progress_bar() -> Progress:
