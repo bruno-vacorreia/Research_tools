@@ -241,8 +241,8 @@ def set_ticks(axis: Axes, x_lims: Union[list, ndarray] = None, y_lims: Union[lis
 
     # Configure and set x-axis ticks and ticks labels
     if x_ticks is None and x_ticks_labels is None:
-        x_ticks = linspace(x_lims[0], x_lims[1], DEF_NUM_TICKS)
-        x_ticks_labels = x_ticks
+        x_ticks = axis.get_xticks()
+        x_ticks_labels = axis.get_xticklabels()
     elif x_ticks_labels is None:
         x_ticks_labels = x_ticks
     elif x_ticks is None:
@@ -252,8 +252,8 @@ def set_ticks(axis: Axes, x_lims: Union[list, ndarray] = None, y_lims: Union[lis
 
     # Configure and set x-axis ticks and ticks labels
     if y_ticks is None and y_ticks_labels is None:
-        y_ticks = linspace(y_lims[0], y_lims[1], DEF_NUM_TICKS)
-        y_ticks_labels = y_ticks
+        y_ticks = axis.get_yticks()
+        y_ticks_labels = axis.get_yticklabels()
     elif y_ticks_labels is None:
         y_ticks_labels = y_ticks
     elif y_ticks is None:
