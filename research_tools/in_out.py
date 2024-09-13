@@ -1,5 +1,5 @@
 """
-Module containing functions for input and output of data and for folder creation and paths.
+Module containing functions for input and output of data, and for folder creation and paths.
 """
 from pathlib import Path
 from os.path import exists, isfile
@@ -22,7 +22,7 @@ PRETTY_PRINT_OPTION = True
 
 
 def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab_keys: bool = True,
-         downcast_type: bool = False, **kwargs) -> Union[dict, DataFrame, ndarray]:
+         downcast_type: bool = False, **kwargs) -> Union[dict, DataFrame, ndarray, str]:
     """
     Load main types of data used in our work.
 
@@ -38,9 +38,8 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
         file_path = Path(file_path)
 
     if file_path.suffix in ['.json']:
-        file = open(file_path, 'r')
-        data = load_json(file, **kwargs)
-        file.close()
+        with open(file_path, 'r') as file:
+            data = load_json(file, **kwargs)
     elif file_path.suffix in ['.csv']:
         data = read_csv(filepath_or_buffer=file_path, **kwargs)
         if downcast_type:
@@ -60,13 +59,16 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
         data = read_excel(io=file_path, **kwargs)
         if downcast_type:
             data = reduce_df_size(data)
+    elif file_path.suffix in ['.txt']:
+        with open(file_path, 'r') as file:
+            data = file.read()
     else:
         raise TypeError('Load function not implemented for "{}" type'.format(file_path.suffix))
 
     return data
 
 
-def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray],
+def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str],
          json_pretty_print: bool = PRETTY_PRINT_OPTION, **kwargs):
     """
     Save the main types of data used in our work.
@@ -83,15 +85,14 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray],
 
     if file_path.suffix in ['.json']:
         data = format_dict_json(data)
-        file = open(file_path, 'w')
-        if not json_pretty_print:
-            save_json(obj=data, fp=file, **update_default_dict(DEFAULT_JSON_PARAMS, kwargs))
-        else:
-            data_str = pformat(data, **update_default_dict(DEFAULT_PRETTY_PRINT_JSON_PARAMS, kwargs))
-            data_str = data_str.replace("'", '"')
-            data_str = data_str.replace('None', 'null')
-            file.write(data_str)
-        file.close()
+        with open(file_path, 'w') as file:
+            if not json_pretty_print:
+                save_json(obj=data, fp=file, **update_default_dict(DEFAULT_JSON_PARAMS, kwargs))
+            else:
+                data_str = pformat(data, **update_default_dict(DEFAULT_PRETTY_PRINT_JSON_PARAMS, kwargs))
+                data_str = data_str.replace("'", '"')
+                data_str = data_str.replace('None', 'null')
+                file.write(data_str)
     elif file_path.suffix in ['.csv']:
         data.to_csv(path_or_buf=file_path, **update_default_dict(DEFAULT_CSV_PARAMS, kwargs))
     elif file_path.suffix in ['.mat']:
@@ -100,16 +101,19 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray],
         save_np(file=file_path, arr=data, **update_default_dict(DEFAULT_NPY_PARAMS, kwargs))
     elif file_path.suffix in ['.xlsx', '.xls', '.ods']:
         data.to_excel(excel_writer=file_path, **update_default_dict(DEFAULT_EXCEL_PARAMS, kwargs))
+    elif file_path.suffix in ['.txt']:
+        with open(file_path, 'w') as file:
+            file.write(data)
     else:
         raise TypeError('Save function not implemented for "{}" type'.format(file_path.suffix))
 
 
 def get_or_create_folder(folder_path: Union[Path, str]) -> Path:
     """
-    Creates entire folder path if it does not exist
+    Creates entire folder path if it does not exist.
 
     :param folder_path: Folder path
-    :return: Same folder path, but with created folder if it does not exist.
+    :return: Same folder path, but with created folder if it does not exist
     """
     if isinstance(folder_path, str):
         folder_path = Path(folder_path)
@@ -117,6 +121,18 @@ def get_or_create_folder(folder_path: Union[Path, str]) -> Path:
         makedirs(folder_path)
 
     return folder_path
+
+
+def create_new_json(file_path: Union[Path, str], num_entrances=2):
+    """
+    Create a generic .json file with a fixed values of entrance.
+
+    :param file_path: File path
+    :param num_entrances: Number of entrances to create
+    :return:
+    """
+    new_dict = {f'key_{index}': f'value_{index}' for index in range(1, num_entrances+1)}
+    save(file_path=file_path, data=new_dict, json_pretty_print=False)
 
 
 if __name__ == '__main__':
