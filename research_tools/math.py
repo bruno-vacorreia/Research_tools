@@ -24,5 +24,5 @@ if __name__ == '__main__':
     test_list = [41.76, 42.9, 40.06]
     test_array = array(test_list)
 
-    print(snr_dB_sum(test_list))
-    print(snr_dB_sum(test_array))
+    print(round(snr_dB_sum(test_list), 2))
+    print(round(snr_dB_sum(test_array), 2))

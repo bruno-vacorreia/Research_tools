@@ -96,8 +96,8 @@ def delta_wavelength2delta_frequency(delta_wl: float, wavelength: float) -> floa
 
 def convert_snr(snr_dB: Union[float, List[float], ndarray[float], ndarray[Any, dtype]],
                 actual_baud_rate: Union[float, List[float], ndarray[float], ndarray[Any, dtype]],
-                new_baud_rate: Union[float, List[float], ndarray[float],
-                                     ndarray[Any, dtype]] = DEFAULT_BAUD_RATE) -> Union[float, ndarray]:
+                new_baud_rate: Union[float, List[float], ndarray[float], ndarray[Any, dtype]] =
+                DEFAULT_BAUD_RATE) -> Union[float, ndarray]:
     """
     Convert SNR from one baud rate to another.
 

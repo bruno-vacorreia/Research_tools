@@ -3,14 +3,17 @@ Module containing functions for input and output of data, and for folder creatio
 """
 from pathlib import Path
 from os.path import exists, isfile
-from os import makedirs
+from os import makedirs, chmod
 from pprint import pformat
 from pandas import read_csv, DataFrame, read_excel
 from numpy import squeeze, ndarray, load as load_np, save as save_np, random
 from json import load as load_json, dump as save_json
 from scipy.io import loadmat as load_mat, savemat as save_mat
+from shutil import rmtree
+from stat import S_IRWXU, S_IRWXG, S_IRWXO
 
-from research_tools.utils import update_default_dict, squeeze_dict, Union, format_dict_json, reduce_df_size
+from research_tools.utils import update_default_dict, squeeze_dict, Union, Dict, format_dict_json, reduce_df_size
+from research_tools.error_handling import handleRemoveReadonly
 
 DEFAULT_CSV_PARAMS = {'index': False, }
 DEFAULT_JSON_PARAMS = {'indent': 2, }
@@ -22,7 +25,7 @@ PRETTY_PRINT_OPTION = True
 
 
 def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab_keys: bool = True,
-         downcast_type: bool = False, **kwargs) -> Union[dict, DataFrame, ndarray, str]:
+         downcast_type: bool = False, **kwargs) -> Union[dict, Dict[str, DataFrame], DataFrame, ndarray, str]:
     """
     Load main types of data used in our work.
 
@@ -56,6 +59,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
         if squeeze_arrays:
             data = squeeze(data)
     elif file_path.suffix in ['.xlsx', '.xls', '.ods']:
+        # TODO: Implement a logic to read several Excel sheets. if only one sheet is present, return only the data frame
         data = read_excel(io=file_path, **kwargs)
         if downcast_type:
             data = reduce_df_size(data)
@@ -90,6 +94,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str]
                 save_json(obj=data, fp=file, **update_default_dict(DEFAULT_JSON_PARAMS, kwargs))
             else:
                 data_str = pformat(data, **update_default_dict(DEFAULT_PRETTY_PRINT_JSON_PARAMS, kwargs))
+                # Replace ' and None symbols
                 data_str = data_str.replace("'", '"')
                 data_str = data_str.replace('None', 'null')
                 file.write(data_str)
@@ -123,6 +128,30 @@ def get_or_create_folder(folder_path: Union[Path, str]) -> Path:
     return folder_path
 
 
+def remove_file_or_folder_and_content(file_path: Union[Path, str], force: bool = False) -> None:
+    """
+    Delete a file or a folder and its content, possibly forcing the deletion.
+
+    :param file_path: File or folder path.
+    :param force: Option to force the deletion if the error is related to access .
+    :return:
+    """
+    if isinstance(file_path, str):
+        file_path = Path(file_path)
+
+    if file_path.is_file():
+        if force is True:
+            chmod(file_path, S_IRWXU | S_IRWXG | S_IRWXO)
+        file_path.unlink()
+    elif file_path.is_dir():
+        if force is True:
+            rmtree(file_path, ignore_errors=False, onerror=handleRemoveReadonly)
+        else:
+            rmtree(file_path, ignore_errors=False)
+    else:
+        raise ValueError('Invalid type to delete. Not folder or file')
+
+
 def create_new_json(file_path: Union[Path, str], num_entrances=2):
     """
     Create a generic .json file with a fixed values of entrance.
@@ -131,7 +160,7 @@ def create_new_json(file_path: Union[Path, str], num_entrances=2):
     :param num_entrances: Number of entrances to create
     :return:
     """
-    new_dict = {f'key_{index}': f'value_{index}' for index in range(1, num_entrances+1)}
+    new_dict = {f'key_{index}': f'value_{index}' for index in range(1, num_entrances + 1)}
     save(file_path=file_path, data=new_dict, json_pretty_print=False)
 
 
