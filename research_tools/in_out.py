@@ -12,6 +12,7 @@ from scipy.io import loadmat as load_mat, savemat as save_mat
 from shutil import rmtree
 from stat import S_IRWXU, S_IRWXG, S_IRWXO
 from zipfile import ZipFile, ZIP_DEFLATED
+from pickle import dump as save_pickle, load as load_pickle
 
 from research_tools.utils import update_default_dict, squeeze_dict, Union, Dict, format_dict_json, reduce_df_size
 from research_tools.error_handling import handleRemoveReadonly
@@ -60,13 +61,17 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
         if squeeze_arrays:
             data = squeeze(data)
     elif file_path.suffix in ['.xlsx', '.xls', '.ods']:
-        # TODO: Implement a logic to read several Excel sheets. if only one sheet is present, return only the data frame
+        # TODO: Implement a logic to read several Excel sheets.
+        #  if only one sheet is present, return only the data frame
         data = read_excel(io=file_path, **kwargs)
         if downcast_type:
             data = reduce_df_size(data)
     elif file_path.suffix in ['.txt']:
         with open(file_path, 'r') as file:
             data = file.read()
+    elif file_path.suffix in ['.pickle']:
+        with open(file_path, 'rb') as file:
+            data = load_pickle(file)
     else:
         raise TypeError('Load function not implemented for "{}" type'.format(file_path.suffix))
 
@@ -110,6 +115,9 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str]
     elif file_path.suffix in ['.txt']:
         with open(file_path, 'w') as file:
             file.write(data)
+    elif file_path.suffix in ['.pickle']:
+        with open(file_path, 'wb') as file:
+            save_pickle(obj=data, file=file)
     else:
         raise TypeError('Save function not implemented for "{}" type'.format(file_path.suffix))
 
@@ -123,6 +131,7 @@ def get_or_create_folder(folder_path: Union[Path, str]) -> Path:
     """
     if isinstance(folder_path, str):
         folder_path = Path(folder_path)
+
     if not exists(folder_path):
         makedirs(folder_path)
 
