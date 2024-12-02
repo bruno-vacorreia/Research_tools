@@ -3,7 +3,7 @@ Module containing functions for input and output of data, and for folder creatio
 """
 from pathlib import Path
 from os.path import exists, isfile
-from os import makedirs, chmod
+from os import makedirs, chmod, path, walk
 from pprint import pformat
 from pandas import read_csv, DataFrame, read_excel
 from numpy import squeeze, ndarray, load as load_np, save as save_np, random
@@ -11,6 +11,7 @@ from json import load as load_json, dump as save_json
 from scipy.io import loadmat as load_mat, savemat as save_mat
 from shutil import rmtree
 from stat import S_IRWXU, S_IRWXG, S_IRWXO
+from zipfile import ZipFile, ZIP_DEFLATED
 
 from research_tools.utils import update_default_dict, squeeze_dict, Union, Dict, format_dict_json, reduce_df_size
 from research_tools.error_handling import handleRemoveReadonly
@@ -150,6 +151,31 @@ def remove_file_or_folder_and_content(file_path: Union[Path, str], force: bool =
             rmtree(file_path, ignore_errors=False)
     else:
         raise ValueError('Invalid type to delete. Not folder or file')
+
+
+def zip_folder_and_content(folder_path: Union[Path, str], name: str = None, delete_folder: bool = False):
+    """
+    Function to zip the folder and its content.
+
+    :param folder_path: Folder path
+    :param name: Name of the zip file (String to be attached at the folder path)
+    :param delete_folder: Option to delete the folder after zip
+    :return:
+    """
+    if isinstance(folder_path, str):
+        folder_path = Path(folder_path)
+    if name is None:
+        name = folder_path.stem
+
+    with ZipFile(folder_path.parent / f'{name}.zip', 'w', ZIP_DEFLATED) as zip_file:
+        for root, dirs, files in walk(folder_path):
+            for file in files:
+                file_path = path.join(root, file)
+                arc_name = path.relpath(file_path, folder_path)
+                zip_file.write(file_path, arc_name)
+
+    if delete_folder:
+        remove_file_or_folder_and_content(folder_path, force=True)
 
 
 def create_new_json(file_path: Union[Path, str], num_entrances=2):
