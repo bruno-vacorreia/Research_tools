@@ -1,18 +1,19 @@
 """
 Module containing functions for plotting.
 """
-from matplotlib.pyplot import figure, show, subplots, close
-from matplotlib.figure import Figure
+from pathlib import Path
+
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.figure import Figure
 from matplotlib.font_manager import FontProperties, get_font_names
 from matplotlib.legend import Legend
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
+from matplotlib.pyplot import figure, show, rc
 from mpl_toolkits.mplot3d import Axes3D
-from pathlib import Path
-from seaborn import set as set_sea, color_palette, set_palette
-from numpy import ndarray, linspace
+from numpy import ndarray
+from seaborn import color_palette, set_palette, set_theme
 
 from research_tools.in_out import get_or_create_folder
 from research_tools.utils import Union, Tuple, List, Literal, update_default_dict
@@ -45,8 +46,11 @@ DEF_SEABORN_STYLE = {
            'patch.edgecolor': 'none',
            'patch.linewidth': 0}
 }
-set_sea(**DEF_SEABORN_STYLE)
+set_theme(**DEF_SEABORN_STYLE)
 set_palette(palette=DEF_SEABORN_STYLE['palette'], n_colors=DEF_NUM_COLORS, color_codes=DEF_SEABORN_STYLE['color_codes'])
+# Parameters for font type error in papers
+rc('pdf', fonttype=42)
+rc('ps', fonttype=42)
 
 LIST_LINE_STYLES = {
     'solid': (0, ()),
@@ -389,7 +393,7 @@ def update_style(new_params: Union[None, dict] = None):
     """
     if new_params is None:
         new_params = DEF_SEABORN_STYLE
-    set_sea(**new_params)
+    set_theme(**new_params)
 
 
 def get_list_line_styles(num_styles: int = None):
