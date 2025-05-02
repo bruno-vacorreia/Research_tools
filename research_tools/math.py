@@ -1,24 +1,27 @@
 """
 Module containing functions for mathematical operations.
 """
-from numpy import seterr, array, sum
+import numpy as np
+from numpy import seterr, array, asarray, ndarray
 from numpy.random import normal, Generator
 
 from research_tools.conversions import lin2dB, dB2lin
+from research_tools.utils import Union
 
 seterr(divide='ignore')
 
 
-def snr_dB_sum(*args):
+def snr_dB_sum(*args) -> Union[float, ndarray]:
     """
     Calculate the sum of Signal-to-Noise Ratios (SNR) given in decibels (dB).
 
     :param args: Variable length argument list of SNR values in dB.
     :return: The combined SNR in dB.
     """
-    snr_list = sum(1 / dB2lin(array(args)))
+    snr_list = [1 / dB2lin(asarray(arg)) for arg in args]
+    snr_sum = sum(snr_list)
 
-    return lin2dB(1 / snr_list)
+    return lin2dB(1 / snr_sum)
 
 
 def normal_distribution_3_sigma(mean=0.0, minimum=-2.0, maximum=2.0, generator: Generator = None) -> float:
@@ -48,10 +51,22 @@ if __name__ == '__main__':
     import research_tools.plot as plt
 
     # Example of SNR sum
-    test_list = [41.76, 42.9, 40.06]
-    test_array = array(test_list)
-    print(round(snr_dB_sum(test_list), 2))
-    print(round(snr_dB_sum(test_array), 2))
+    first_list = [41.76, 42.9, 40.06]
+    first_array = array(first_list)
+    second_array = array([first_array, first_array - 1])
+    second_list = [first_list, first_list, 35]
+
+    print(f'SNR list: {first_list}')
+    print(round(snr_dB_sum(*first_list), 2))
+
+    print(f'SNR array: {first_array}')
+    print(round(snr_dB_sum(*first_array), 2))
+
+    print(f'SNR matrix: {second_array}')
+    print(np.round(snr_dB_sum(*second_array), 2))
+
+    print(f'SNR list with different sizes: {second_list}')
+    print(np.round(snr_dB_sum(*second_list), 2))
 
     # Example of normal distribution
     num_values = int(1e5)
