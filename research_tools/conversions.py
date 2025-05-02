@@ -107,3 +107,35 @@ def convert_snr(snr_dB: Union[float, List[float], ndarray[float], ndarray[Any, d
     :return: Converted SNR in dB
     """
     return snr_dB - lin2dB(new_baud_rate / actual_baud_rate)
+
+
+def binary_to_hex(binary_str: str) -> str:
+    """
+    Convert binary string to hexadecimal string.
+
+    :param binary_str: Binary string
+    :return: Hexadecimal string
+    """
+    # Convert binary string to an integer
+    decimal = int(binary_str, 2)
+    # Convert integer to hexadecimal string
+    hex_str = hex(decimal)
+
+    # Remove the '0x' prefix
+    return hex_str[2:]
+
+
+def hex_to_binary(hex_str: str) -> str:
+    """
+    Convert hexadecimal string to binary string.
+
+    :param hex_str: Hexadecimal string
+    :return: Binary string
+    """
+    # Convert hexadecimal string to an integer
+    decimal = int(hex_str, 16)
+    # Convert integer to binary string
+    binary_str = bin(decimal)
+
+    # Remove the '0b' prefix
+    return binary_str[2:]
