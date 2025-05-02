@@ -2,7 +2,6 @@
 Module containing functions for plotting.
 """
 from pathlib import Path
-
 from matplotlib.axes import Axes
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
@@ -43,7 +42,7 @@ DEF_SEABORN_STYLE = {
     'rc': {'grid.linestyle': '-',
            'grid.linewidth': 1.0,
            'axes.edgecolor': 'black',
-           'patch.edgecolor': 'none',
+           'patch.edgecolor': 'black',
            'patch.linewidth': 0}
 }
 set_theme(**DEF_SEABORN_STYLE)
