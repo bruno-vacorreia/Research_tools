@@ -1,7 +1,7 @@
 """
 Module containing functions for units conversion.
 """
-from numpy import log10, ndarray, dtype, seterr
+from numpy import log10, ndarray, dtype, seterr, array
 from scipy.constants import nu2lambda, lambda2nu
 
 from research_tools.utils import Union, List, Any
@@ -10,44 +10,76 @@ DEFAULT_BAUD_RATE = 12.5e9
 seterr(divide='ignore')
 
 
-def lin2dB(value_lin: Union[float, ndarray]) -> Union[float, ndarray]:
+def lin2dB(value_lin: Union[float, list, ndarray]) -> Union[float, list, ndarray]:
     """
     Convert linear value to decibels (dB).
 
     :param value_lin: Linear value
     :return: Value in dB
     """
-    return 10 * log10(value_lin)
+    flag_list = False
+    if isinstance(value_lin, list):
+        value_lin = array(value_lin)
+        flag_list = True
+
+    if flag_list:
+        return list(10 * log10(value_lin))
+    else:
+        return 10 * log10(value_lin)
 
 
-def lin2dBm(value_lin: Union[float, ndarray]) -> Union[float, ndarray]:
+def lin2dBm(value_lin: Union[float, list, ndarray]) -> Union[float, list, ndarray]:
     """
     Convert linear value to decibel-milliwatts (dBm).
 
     :param value_lin: Linear value
     :return: Value in dBm
     """
-    return lin2dB(value_lin) + 30
+    flag_list = False
+    if isinstance(value_lin, list):
+        value_lin = array(value_lin)
+        flag_list = True
+
+    if flag_list:
+        return list(lin2dB(value_lin) + 30)
+    else:
+        return lin2dB(value_lin) + 30
 
 
-def dB2lin(value_dB: Union[float, ndarray]) -> Union[float, ndarray]:
+def dB2lin(value_dB: Union[float, list, ndarray]) -> Union[float, list, ndarray]:
     """
     Convert decibels (dB) to linear value.
 
     :param value_dB: Value in dB
     :return: Linear value
     """
-    return 10 ** (value_dB / 10)
+    flag_list = False
+    if isinstance(value_dB, list):
+        value_dB = array(value_dB)
+        flag_list = True
+
+    if flag_list:
+        return list(10 ** (value_dB / 10))
+    else:
+        return 10 ** (value_dB / 10)
 
 
-def dBm2lin(value_dBm: Union[float, ndarray]) -> Union[float, ndarray]:
+def dBm2lin(value_dBm: Union[float, list, ndarray]) -> Union[float, list, ndarray]:
     """
     Convert decibel-milliwatts (dBm) to linear value.
 
     :param value_dBm: Value in dBm
     :return: Linear value
     """
-    return dB2lin(value_dBm) * 1e-3
+    flag_list = False
+    if isinstance(value_dBm, list):
+        value_dBm = array(value_dBm)
+        flag_list = True
+
+    if flag_list:
+        return list(dB2lin(value_dBm) * 1e-3)
+    else:
+        return dB2lin(value_dBm) * 1e-3
 
 
 def wavelength2frequency(wavelength: Union[float, ndarray]) -> Union[float, ndarray]:
