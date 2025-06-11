@@ -45,6 +45,11 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
     if file_path.suffix in ['.json']:
         with open(file_path, 'r') as file:
             data = load_json(file, **kwargs)
+            for key, value in data.items():
+                if value == 'true':
+                    data[key] = True
+                elif value == 'false':
+                    data[key] = False
     elif file_path.suffix in ['.csv']:
         data = read_csv(filepath_or_buffer=file_path, **kwargs)
         if downcast_type:
@@ -102,7 +107,9 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str]
                 data_str = pformat(data, **update_default_dict(DEFAULT_PRETTY_PRINT_JSON_PARAMS, kwargs))
                 # Replace ' and None symbols
                 data_str = data_str.replace("'", '"')
-                data_str = data_str.replace('None', 'null')
+                data_str = data_str.replace(' None', ' null')
+                data_str = data_str.replace(' True', ' true')
+                data_str = data_str.replace(' False', ' false')
                 file.write(data_str)
     elif file_path.suffix in ['.csv']:
         data.to_csv(path_or_buf=file_path, **update_default_dict(DEFAULT_CSV_PARAMS, kwargs))

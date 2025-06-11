@@ -55,10 +55,8 @@ def format_dict_json(input_dict: dict) -> dict:
             new_dict[key] = value.tolist()
         elif value_type is dict:
             new_dict[key] = format_dict_json(value)
-        elif value_type in [list, str] or value is None:
+        elif value_type in [list, str, bool] or value is None:
             new_dict[key] = value
-        elif value_type is bool:
-            new_dict[key] = 'false' if value is False else 'true'
         else:
             raise TypeError(f'Unsupported type for value in dict: {value_type}')
     return new_dict
