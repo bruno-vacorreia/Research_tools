@@ -5,7 +5,7 @@ from pathlib import Path
 from os.path import exists, isfile
 from os import makedirs, chmod, path, walk
 from pprint import pformat
-from pandas import read_csv, DataFrame, read_excel
+from pandas import read_csv, DataFrame, read_excel, ExcelWriter
 from numpy import squeeze, ndarray, load as load_np, save as save_np, random
 from json import load as load_json, dump as save_json
 from scipy.io import loadmat as load_mat, savemat as save_mat
@@ -118,7 +118,12 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str]
     elif file_path.suffix in ['.npy', '.npz']:
         save_np(file=file_path, arr=data, **update_default_dict(DEFAULT_NPY_PARAMS, kwargs))
     elif file_path.suffix in ['.xlsx', '.xls', '.ods']:
-        data.to_excel(excel_writer=file_path, **update_default_dict(DEFAULT_EXCEL_PARAMS, kwargs))
+        if isinstance(data, DataFrame):
+            data.to_excel(excel_writer=file_path, **update_default_dict(DEFAULT_EXCEL_PARAMS, kwargs))
+        elif isinstance(data, dict):
+            with ExcelWriter(file_path, engine='openpyxl') as writer:
+                for sheet_name, dataframe in data.items():
+                    dataframe.to_excel(writer, sheet_name=sheet_name, **update_default_dict(DEFAULT_EXCEL_PARAMS, kwargs))
     elif file_path.suffix in ['.txt']:
         with open(file_path, 'w') as file:
             file.write(data)
