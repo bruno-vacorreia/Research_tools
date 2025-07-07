@@ -4,9 +4,12 @@ Module containing functions for mathematical operations.
 import numpy as np
 from numpy import seterr, array, asarray, ndarray
 from numpy.random import normal, Generator
+from math import sin, cos, asin, sqrt, radians
 
 from research_tools.conversions import lin2dB, dB2lin
 from research_tools.utils import Union
+
+RADIUS_EARTH_KM = 6371
 
 seterr(divide='ignore')
 
@@ -45,6 +48,24 @@ def normal_distribution_3_sigma(mean=0.0, minimum=-2.0, maximum=2.0, generator: 
         value = generator.normal(mean, sigma)
 
     return value
+
+
+def haversine_distance(sour_lat, sour_lon, dest_lat, dest_lon) -> float:
+    """
+    Computes the Haversine distance between two points.
+
+    :param sour_lat: Latitude of point 1
+    :param sour_lon: Longitude of point 1
+    :param dest_lat: Latitude of point 2
+    :param dest_lon: Longitude of point 2
+    :return: Haversine distance
+    """
+    sour_lat, sour_lon, dest_lat, dest_lon = map(radians, [sour_lat, sour_lon, dest_lat, dest_lon])
+
+    k = (sin((dest_lat - sour_lat) / 2) ** 2 +
+         (cos(sour_lat) * cos(dest_lat)) * sin((dest_lon - sour_lon) / 2) ** 2)
+
+    return 2 * RADIUS_EARTH_KM * asin(sqrt(k))
 
 
 if __name__ == '__main__':

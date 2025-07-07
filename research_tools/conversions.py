@@ -4,7 +4,7 @@ Module containing functions for units conversion.
 from numpy import log10, ndarray, dtype, seterr, array
 from scipy.constants import nu2lambda, lambda2nu
 
-from research_tools.utils import Union, List, Any
+from research_tools.utils import Union, List, Any, Tuple
 
 DEFAULT_BAUD_RATE = 12.5e9
 seterr(divide='ignore')
@@ -171,3 +171,33 @@ def hex_to_binary(hex_str: str) -> str:
 
     # Remove the '0b' prefix
     return binary_str[2:]
+
+
+def decimal_to_dms(decimal_degree: float) -> Tuple[int, int, float]:
+    """
+    Convert position in decimal degree format to degree, minute and second format.
+
+    :param decimal_degree: Position in decimal degree
+    :return: Position in degree, minute and second format
+    """
+    sing = 1 if decimal_degree > 0 else -1
+    degrees = int(decimal_degree)
+    minutes_float = abs(decimal_degree - degrees) * 60
+    minutes = int(minutes_float)
+    seconds = round(abs(minutes_float - minutes) * 60)
+
+    return sing * degrees, sing * minutes, sing * seconds
+
+
+def dms_to_decimal(degrees: float, minutes: float, seconds: float) -> float:
+    """
+    Convert position in degree, minute and second format to decimal degree format.
+
+    :param degrees: Position degree
+    :param minutes: Position minute
+    :param seconds: Position second
+    :return: Position in decimal degree
+    """
+    sign = -1 if any(value < 0 for value in [degrees, minutes, seconds]) else 1
+
+    return sign * (abs(degrees) + abs(minutes) / 60 + abs(seconds) / 3600)
