@@ -186,7 +186,7 @@ def decimal_to_dms(decimal_degree: float) -> Tuple[int, int, float]:
     minutes = int(minutes_float)
     seconds = round(abs(minutes_float - minutes) * 60)
 
-    return sing * degrees, sing * minutes, sing * seconds
+    return degrees, sing * minutes, sing * seconds
 
 
 def dms_to_decimal(degrees: float, minutes: float, seconds: float) -> float:

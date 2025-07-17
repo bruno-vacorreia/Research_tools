@@ -482,7 +482,7 @@ if __name__ == '__main__':
     fig2.tight_layout()
 
     # Save figure(s)
-    out_path = get_or_create_folder('../dump_data/Figures')
+    # out_path = get_or_create_folder('../dump_data/Figures')
     # save_fig(fig_path=out_path / 'sin_cos.png', fig=fig1)
     # save_figs_pdf(fig_path=out_path / 'all_plots.pdf', list_figs=[fig1, fig2])
 
