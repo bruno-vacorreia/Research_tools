@@ -126,9 +126,9 @@ def delta_wavelength2delta_frequency(delta_wl: float, wavelength: float) -> floa
     return delta_wl * frequency / wavelength
 
 
-def convert_snr(snr_dB: Union[float, List[float], ndarray[float], ndarray[Any, dtype]],
-                actual_baud_rate: Union[float, List[float], ndarray[float], ndarray[Any, dtype]],
-                new_baud_rate: Union[float, List[float], ndarray[float], ndarray[Any, dtype]] =
+def convert_snr(snr_dB: Union[float, List[float], ndarray[Any, dtype]],
+                actual_baud_rate: Union[float, List[float], ndarray[Any, dtype]],
+                new_baud_rate: Union[float, List[float], ndarray[Any, dtype]] =
                 DEFAULT_BAUD_RATE) -> Union[float, ndarray]:
     """
     Convert SNR from one baud rate to another.
@@ -138,7 +138,21 @@ def convert_snr(snr_dB: Union[float, List[float], ndarray[float], ndarray[Any, d
     :param new_baud_rate: New baud rate (default is 12.5 GHz)
     :return: Converted SNR in dB
     """
-    return snr_dB - lin2dB(new_baud_rate / actual_baud_rate)
+    flag_list = False
+    if isinstance(actual_baud_rate, list):
+        actual_baud_rate = array(actual_baud_rate)
+    if isinstance(new_baud_rate, list):
+        new_baud_rate = array(new_baud_rate)
+    if isinstance(snr_dB, list):
+        snr_dB = array(snr_dB)
+        flag_list = True
+
+    new_snr_dB = snr_dB - lin2dB(new_baud_rate / actual_baud_rate)
+
+    if flag_list:
+        new_snr_dB = list(new_snr_dB)
+
+    return new_snr_dB
 
 
 def binary_to_hex(binary_str: str) -> str:
