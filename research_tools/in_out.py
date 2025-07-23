@@ -17,12 +17,13 @@ from pickle import dump as save_pickle, load as load_pickle
 from research_tools.utils import update_default_dict, squeeze_dict, Union, Dict, format_dict_json, reduce_df_size
 from research_tools.error_handling import handleRemoveReadonly
 
-DEFAULT_CSV_PARAMS = {'index': False, }
-DEFAULT_JSON_PARAMS = {'indent': 2, }
-DEFAULT_PRETTY_PRINT_JSON_PARAMS = {'indent': 2, 'width': 120, 'compact': True, 'sort_dicts': False}
-DEFAULT_NPY_PARAMS = {}
-DEFAULT_MAT_PARAMS = {}
-DEFAULT_EXCEL_PARAMS = {'header': True, 'index': False, }
+SAVE_DEFAULT_CSV_PARAMS = {'index': False, }
+SAVE_DEFAULT_JSON_PARAMS = {'indent': 2, }
+SAVE_DEFAULT_PRETTY_PRINT_JSON_PARAMS = {'indent': 2, 'width': 120, 'compact': True, 'sort_dicts': False, }
+SAVE_DEFAULT_NPY_PARAMS = {}
+SAVE_DEFAULT_MAT_PARAMS = {}
+SAVE_DEFAULT_EXCEL_PARAMS = {'header': True, 'index': False, }
+LOAD_DEFAULT_EXCEL_PARAMS = {'sheet_name': None, }
 PRETTY_PRINT_OPTION = True
 
 
@@ -66,11 +67,16 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
         if squeeze_arrays:
             data = squeeze(data)
     elif file_path.suffix in ['.xlsx', '.xls', '.ods']:
-        # TODO: Implement a logic to read several Excel sheets.
-        #  if only one sheet is present, return only the data frame
-        data = read_excel(io=file_path, **kwargs)
-        if downcast_type:
-            data = reduce_df_size(data)
+        data = read_excel(io=file_path, **update_default_dict(LOAD_DEFAULT_EXCEL_PARAMS, kwargs))
+        if len(data.keys()) == 0:
+            raise ValueError('Excel file does not present any dataframe.')
+        if len(data.keys()) == 1:
+            data = data[list(data.keys())[0]]
+            if downcast_type:
+                data = reduce_df_size(data)
+        elif len(data.keys()) > 1 and downcast_type:
+            for key, data_frame in data.items():
+                data[key] = reduce_df_size(data_frame)
     elif file_path.suffix in ['.txt']:
         with open(file_path, 'r') as file:
             data = file.read()
@@ -102,9 +108,9 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str]
         data = format_dict_json(data)
         with open(file_path, 'w') as file:
             if not json_pretty_print:
-                save_json(obj=data, fp=file, **update_default_dict(DEFAULT_JSON_PARAMS, kwargs))
+                save_json(obj=data, fp=file, **update_default_dict(SAVE_DEFAULT_JSON_PARAMS, kwargs))
             else:
-                data_str = pformat(data, **update_default_dict(DEFAULT_PRETTY_PRINT_JSON_PARAMS, kwargs))
+                data_str = pformat(data, **update_default_dict(SAVE_DEFAULT_PRETTY_PRINT_JSON_PARAMS, kwargs))
                 # Replace ' and None symbols
                 data_str = data_str.replace("'", '"')
                 data_str = data_str.replace(' None', ' null')
@@ -112,18 +118,19 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str]
                 data_str = data_str.replace(' False', ' false')
                 file.write(data_str)
     elif file_path.suffix in ['.csv']:
-        data.to_csv(path_or_buf=file_path, **update_default_dict(DEFAULT_CSV_PARAMS, kwargs))
+        data.to_csv(path_or_buf=file_path, **update_default_dict(SAVE_DEFAULT_CSV_PARAMS, kwargs))
     elif file_path.suffix in ['.mat']:
-        save_mat(file_name=file_path, mdict=data, **update_default_dict(DEFAULT_MAT_PARAMS, kwargs))
+        save_mat(file_name=file_path, mdict=data, **update_default_dict(SAVE_DEFAULT_MAT_PARAMS, kwargs))
     elif file_path.suffix in ['.npy', '.npz']:
-        save_np(file=file_path, arr=data, **update_default_dict(DEFAULT_NPY_PARAMS, kwargs))
+        save_np(file=file_path, arr=data, **update_default_dict(SAVE_DEFAULT_NPY_PARAMS, kwargs))
     elif file_path.suffix in ['.xlsx', '.xls', '.ods']:
         if isinstance(data, DataFrame):
-            data.to_excel(excel_writer=file_path, **update_default_dict(DEFAULT_EXCEL_PARAMS, kwargs))
+            data.to_excel(excel_writer=file_path, **update_default_dict(SAVE_DEFAULT_EXCEL_PARAMS, kwargs))
         elif isinstance(data, dict):
             with ExcelWriter(file_path, engine='openpyxl') as writer:
                 for sheet_name, dataframe in data.items():
-                    dataframe.to_excel(writer, sheet_name=sheet_name, **update_default_dict(DEFAULT_EXCEL_PARAMS, kwargs))
+                    dataframe.to_excel(writer, sheet_name=sheet_name,
+                                       **update_default_dict(SAVE_DEFAULT_EXCEL_PARAMS, kwargs))
     elif file_path.suffix in ['.txt']:
         with open(file_path, 'w') as file:
             file.write(data)
