@@ -31,6 +31,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
          downcast_type: bool = False, **kwargs) -> Union[dict, Dict[str, DataFrame], DataFrame, ndarray, str]:
     """
     Load main types of data used in our work.
+    Working with the following extensions: .json, .csv, .mat, .npy, .npz, .xlsx, .xls, .ods, .txt, and .pickle.
 
     :param file_path: File path
     :param squeeze_arrays: Option to squeeze arrays within the dict (Used for numpy array and .mat files)
@@ -94,6 +95,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str]
     """
     Save the main types of data used in our work.
     Using the default parameters of the respective save function, unless set different.
+    Working with the following extensions: .json, .csv, .mat, .npy, .npz, .xlsx, .xls, .ods, .txt, and .pickle.
 
     :param file_path: File path
     :param data: Data to save
@@ -207,7 +209,35 @@ def zip_folder_and_content(folder_path: Union[Path, str], name: str = None, dele
         remove_file_or_folder_and_content(folder_path, force=True)
 
 
-def create_new_json(file_path: Union[Path, str], num_entrances=2):
+def extract_to_folder(file_path: Union[Path, str], folder_name: str = None, output_path: Union[str, Path] = None,
+                      delete_file: bool = False):
+    """
+    Function to extract a zip file to a folder.
+
+    :param file_path: Path to the file
+    :param folder_name: New folder name (Optional)
+    :param output_path: Output path (Optional)
+    :param delete_file: Option to delete the extracted file
+    :return:
+    """
+    if isinstance(file_path, str):
+        file_path = Path(file_path)
+    if isinstance(output_path, str):
+        output_path = Path(output_path)
+    if folder_name is None:
+        folder_name = file_path.stem
+    if output_path is None:
+        output_path = file_path.parent
+    if not output_path.is_dir():
+        output_path = get_or_create_folder(output_path)
+
+    with ZipFile(file_path, 'r') as zip_file:
+        zip_file.extractall(path=output_path / folder_name)
+    if delete_file:
+        file_path.unlink()
+
+
+def create_new_json(file_path: Union[Path, str], num_entrances: int = 2):
     """
     Create a generic .json file with a fixed values of entrance.
 
