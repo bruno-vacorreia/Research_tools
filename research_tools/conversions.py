@@ -187,7 +187,7 @@ def hex_to_binary(hex_str: str) -> str:
     return binary_str[2:]
 
 
-def decimal_to_dms(decimal_degree: float) -> Tuple[int, int, float]:
+def decimal_to_dms(decimal_degree: float) -> Tuple[int, int, int]:
     """
     Convert position in decimal degree format to degree, minute and second format.
 
@@ -203,7 +203,7 @@ def decimal_to_dms(decimal_degree: float) -> Tuple[int, int, float]:
     return degrees, sing * minutes, sing * seconds
 
 
-def dms_to_decimal(degrees: float, minutes: float, seconds: float) -> float:
+def dms_to_decimal(degrees: int, minutes: int, seconds: int) -> float:
     """
     Convert position in degree, minute and second format to decimal degree format.
 
