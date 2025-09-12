@@ -136,6 +136,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str]
             file.write(data)
     elif file_path.suffix in ['.pickle']:
         with open(file_path, 'wb') as file:
+            # noinspection PyTypeChecker
             save_pickle(obj=data, file=file)
     else:
         raise TypeError('Save function not implemented for "{}" type'.format(file_path.suffix))
@@ -169,11 +170,11 @@ def remove_file_or_folder_and_content(file_path: Union[Path, str], force: bool =
         file_path = Path(file_path)
 
     if file_path.is_file():
-        if force is True:
+        if force:
             chmod(file_path, S_IRWXU | S_IRWXG | S_IRWXO)
         file_path.unlink()
     elif file_path.is_dir():
-        if force is True:
+        if force:
             rmtree(file_path, ignore_errors=False, onerror=handleRemoveReadonly)
         else:
             rmtree(file_path, ignore_errors=False)
