@@ -125,7 +125,7 @@ DEFAULT_LEGEND_PROPERTY = get_font_property(weight=LIST_FONT_WEIGHTS[4], size=LI
 
 
 def get_figure(fig_id: Union[int, str] = None, size: Tuple[float, float] = DEF_FIG_SIZE,
-               dpi: float = DEF_VIEW_DPI) -> Figure:
+               dpi: float = DEF_VIEW_DPI, **kwargs) -> Figure:
     """
     Wrapper for creation of new figure.
 
@@ -134,7 +134,7 @@ def get_figure(fig_id: Union[int, str] = None, size: Tuple[float, float] = DEF_F
     :param dpi: Figure DPI
     :return: Created figure
     """
-    return figure(num=fig_id, figsize=size, dpi=dpi)
+    return figure(num=fig_id, figsize=size, dpi=dpi, **kwargs)
 
 
 def add_subplot(fig: Figure, num_rows: int = DEF_NUM_ROW_COL[0], num_columns: int = DEF_NUM_ROW_COL[1],
