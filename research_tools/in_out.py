@@ -41,8 +41,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
     :param kwargs: Parameters of the respective load function
     :return: Data loaded
     """
-    if isinstance(file_path, str):
-        file_path = Path(file_path)
+    file_path = Path(file_path) if isinstance(file_path, str) else file_path
 
     if file_path.suffix in ['.json']:
         with open(file_path, 'r') as file:
@@ -103,8 +102,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str]
     :param kwargs: Parameters of the respective save function
     :return:
     """
-    if isinstance(file_path, str):
-        file_path = Path(file_path)
+    file_path = Path(file_path) if isinstance(file_path, str) else file_path
 
     if file_path.suffix in ['.json']:
         data = format_dict_json(data)
@@ -151,8 +149,7 @@ def get_or_create_folder(folder_path: Union[Path, str]) -> Path:
     :param folder_path: Folder path
     :return: Same folder path, but with created folder if it does not exist
     """
-    if isinstance(folder_path, str):
-        folder_path = Path(folder_path)
+    folder_path = Path(folder_path) if isinstance(folder_path, str) else folder_path
 
     if not exists(folder_path):
         makedirs(folder_path)
@@ -168,8 +165,7 @@ def remove_file_or_folder_and_content(file_path: Union[Path, str], force: bool =
     :param force: Option to force the deletion if the error is related to access .
     :return:
     """
-    if isinstance(file_path, str):
-        file_path = Path(file_path)
+    file_path = Path(file_path) if isinstance(file_path, str) else file_path
 
     if file_path.is_file():
         if force:
@@ -193,10 +189,8 @@ def zip_folder_and_content(folder_path: Union[Path, str], name: str = None, dele
     :param delete_folder: Option to delete the folder after zip
     :return:
     """
-    if isinstance(folder_path, str):
-        folder_path = Path(folder_path)
-    if name is None:
-        name = folder_path.stem
+    folder_path = Path(folder_path) if isinstance(folder_path, str) else folder_path
+    name = folder_path.stem if name is None else name
 
     with ZipFile(folder_path.parent / f'{name}.zip', 'w', ZIP_DEFLATED) as zip_file:
         for root, dirs, files in walk(folder_path):
@@ -220,16 +214,11 @@ def extract_to_folder(file_path: Union[Path, str], folder_name: str = None, outp
     :param delete_file: Option to delete the extracted file
     :return:
     """
-    if isinstance(file_path, str):
-        file_path = Path(file_path)
-    if isinstance(output_path, str):
-        output_path = Path(output_path)
-    if folder_name is None:
-        folder_name = file_path.stem
-    if output_path is None:
-        output_path = file_path.parent
-    if not output_path.is_dir():
-        output_path = get_or_create_folder(output_path)
+    file_path = Path(file_path) if isinstance(file_path, str) else file_path
+    output_path = Path(output_path) if isinstance(output_path, str) else output_path
+    folder_name = file_path.stem if folder_name is None else folder_name
+    output_path = file_path.parent if output_path is None else output_path
+    output_path = get_or_create_folder(output_path) if not output_path.is_dir() else output_path
 
     with ZipFile(file_path, 'r') as zip_file:
         zip_file.extractall(path=output_path / folder_name)
