@@ -9,7 +9,7 @@ from pandas import read_csv, DataFrame, read_excel, ExcelWriter
 from numpy import squeeze, ndarray, load as load_np, save as save_np, random
 from json import load as load_json, dump as save_json
 from scipy.io import loadmat as load_mat, savemat as save_mat
-from shutil import rmtree
+from shutil import rmtree, copy2, copytree
 from stat import S_IRWXU, S_IRWXG, S_IRWXO
 from zipfile import ZipFile, ZIP_DEFLATED
 from pickle import dump as save_pickle, load as load_pickle
@@ -155,6 +155,29 @@ def get_or_create_folder(folder_path: Union[Path, str]) -> Path:
         makedirs(folder_path)
 
     return folder_path
+
+def copy_file_or_folder(source_path: Union[Path, str], destination_path: Union[Path, str],
+                        delete: bool = False) -> None:
+    """
+    Copy a file or a folder and its content, possibly forcing the deletion afterward.
+
+    :param source_path: Source file or folder
+    :param destination_path: Destination folder
+    :param delete: Option to delete the file/folder after copying
+    :return: None
+    """
+    source_path = Path(source_path) if isinstance(source_path, str) else source_path
+    destination_path = Path(destination_path) if isinstance(destination_path, str) else destination_path
+
+    if source_path.is_file():
+        copy2(source_path, destination_path / source_path.name)
+    elif source_path.is_dir():
+        copytree(source_path, destination_path / source_path.name, dirs_exist_ok=True)
+    else:
+        raise TypeError(f'Source path "{source_path}" is neither a file nor a directory.')
+
+    if delete:
+        remove_file_or_folder_and_content(file_path=source_path, force=True)
 
 
 def remove_file_or_folder_and_content(file_path: Union[Path, str], force: bool = False) -> None:
