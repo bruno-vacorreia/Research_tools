@@ -155,36 +155,40 @@ def convert_snr(snr_dB: Union[float, List[float], ndarray[Any, dtype]],
     return new_snr_dB
 
 
-def binary_to_hex(binary_str: str) -> str:
+def binary_to_hex(binary_str: str, same_length: bool = True) -> str:
     """
     Convert binary string to hexadecimal string.
 
     :param binary_str: Binary string
+    :param same_length: Option to maintain the same number of digits. Default True
     :return: Hexadecimal string
     """
     # Convert binary string to an integer
     decimal = int(binary_str, 2)
     # Convert integer to hexadecimal string
-    hex_str = hex(decimal)
+    hex_str = hex(decimal)[2:]
+    hex_str = hex_str.zfill(len(binary_str) // 4) if same_length else hex_str
 
     # Remove the '0x' prefix
-    return hex_str[2:]
+    return hex_str
 
 
-def hex_to_binary(hex_str: str) -> str:
+def hex_to_binary(hex_str: str, same_length: bool = True) -> str:
     """
     Convert hexadecimal string to binary string.
 
     :param hex_str: Hexadecimal string
+    :param same_length: Option to maintain the same number of digits. Default True
     :return: Binary string
     """
     # Convert hexadecimal string to an integer
     decimal = int(hex_str, 16)
     # Convert integer to binary string
-    binary_str = bin(decimal)
+    binary_str = bin(decimal)[2:]
+    binary_str = binary_str.zfill(len(hex_str) * 4) if same_length else binary_str
 
     # Remove the '0b' prefix
-    return binary_str[2:]
+    return binary_str
 
 
 def decimal_to_dms(decimal_degree: float) -> Tuple[int, int, int]:
