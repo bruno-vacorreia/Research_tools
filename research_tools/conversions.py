@@ -1,8 +1,8 @@
 """
 Module containing functions for units conversion.
 """
-from numpy import log10, ndarray, dtype, seterr, array
-from scipy.constants import nu2lambda, lambda2nu
+from numpy import log10, ndarray, dtype, seterr, array, asanyarray, any as np_any
+from scipy.constants import c
 
 from research_tools.utils import Union, List, Any, Tuple
 
@@ -13,37 +13,29 @@ seterr(divide='ignore')
 def lin2dB(value_lin: Union[float, list, ndarray]) -> Union[float, list, ndarray]:
     """
     Convert linear value to decibels (dB).
+    Maintain the same input type.
 
     :param value_lin: Linear value
     :return: Value in dB
     """
-    flag_list = False
-    if isinstance(value_lin, list):
-        value_lin = array(value_lin)
-        flag_list = True
+    flag_convert = True if isinstance(value_lin, (float, list)) else False
+    value_lin = asanyarray(value_lin)
 
-    if flag_list:
-        return list(10 * log10(value_lin))
-    else:
-        return 10 * log10(value_lin)
+    return (10 * log10(value_lin)).tolist()  if flag_convert else 10 * log10(value_lin)
 
 
 def lin2dBm(value_lin: Union[float, list, ndarray]) -> Union[float, list, ndarray]:
     """
     Convert linear value to decibel-milliwatts (dBm).
+    Maintain the same input type.
 
     :param value_lin: Linear value
     :return: Value in dBm
     """
-    flag_list = False
-    if isinstance(value_lin, list):
-        value_lin = array(value_lin)
-        flag_list = True
+    flag_convert = True if isinstance(value_lin, (float, list)) else False
+    value_lin = asanyarray(value_lin)
 
-    if flag_list:
-        return list(lin2dB(value_lin) + 30)
-    else:
-        return lin2dB(value_lin) + 30
+    return (lin2dB(value_lin) + 30).tolist() if flag_convert else lin2dB(value_lin) + 30
 
 
 def dB2lin(value_dB: Union[float, list, ndarray]) -> Union[float, list, ndarray]:
@@ -53,15 +45,10 @@ def dB2lin(value_dB: Union[float, list, ndarray]) -> Union[float, list, ndarray]
     :param value_dB: Value in dB
     :return: Linear value
     """
-    flag_list = False
-    if isinstance(value_dB, list):
-        value_dB = array(value_dB)
-        flag_list = True
+    flag_convert = True if isinstance(value_dB, (float, list)) else False
+    value_dB = asanyarray(value_dB)
 
-    if flag_list:
-        return list(10 ** (value_dB / 10))
-    else:
-        return 10 ** (value_dB / 10)
+    return (10 ** (value_dB / 10)).tolist() if flag_convert else 10 ** (value_dB / 10)
 
 
 def dBm2lin(value_dBm: Union[float, list, ndarray]) -> Union[float, list, ndarray]:
@@ -71,15 +58,10 @@ def dBm2lin(value_dBm: Union[float, list, ndarray]) -> Union[float, list, ndarra
     :param value_dBm: Value in dBm
     :return: Linear value
     """
-    flag_list = False
-    if isinstance(value_dBm, list):
-        value_dBm = array(value_dBm)
-        flag_list = True
+    flag_convert = True if isinstance(value_dBm, (float, list)) else False
+    value_dBm = asanyarray(value_dBm)
 
-    if flag_list:
-        return list(dB2lin(value_dBm) * 1e-3)
-    else:
-        return dB2lin(value_dBm) * 1e-3
+    return (dB2lin(value_dBm) * 1e-3).tolist() if flag_convert else dB2lin(value_dBm) * 1e-3
 
 
 def wavelength2frequency(wavelength: Union[float, ndarray]) -> Union[float, ndarray]:
@@ -89,7 +71,12 @@ def wavelength2frequency(wavelength: Union[float, ndarray]) -> Union[float, ndar
     :param wavelength: Wavelength in meters
     :return: Frequency in Hz
     """
-    return lambda2nu(wavelength)
+    if np_any(wavelength == 0.0):
+        raise ZeroDivisionError('Wavelength cannot be zero')
+    elif np_any(wavelength < 0.0):
+        raise ValueError('Wavelength cannot be negative')
+
+    return c / wavelength
 
 
 def frequency2wavelength(freq: Union[float, ndarray]) -> Union[float, ndarray]:
@@ -99,7 +86,12 @@ def frequency2wavelength(freq: Union[float, ndarray]) -> Union[float, ndarray]:
     :param freq: Frequency in Hz
     :return: Wavelength in meters
     """
-    return nu2lambda(freq)
+    if np_any(freq == 0.0):
+        raise ZeroDivisionError('Frequency cannot be zero')
+    elif np_any(freq < 0.0):
+        raise ValueError('Frequency cannot be negative')
+
+    return c / freq
 
 
 def delta_frequency2delta_wavelength(delta_f: float, frequency: float) -> float:
@@ -138,19 +130,16 @@ def convert_snr(snr_dB: Union[float, List[float], ndarray[Any, dtype]],
     :param new_baud_rate: New baud rate (default is 12.5 GHz)
     :return: Converted SNR in dB
     """
-    flag_list = False
-    if isinstance(actual_baud_rate, list):
-        actual_baud_rate = array(actual_baud_rate)
-    if isinstance(new_baud_rate, list):
-        new_baud_rate = array(new_baud_rate)
-    if isinstance(snr_dB, list):
-        snr_dB = array(snr_dB)
-        flag_list = True
+    flag_convert = True if isinstance(snr_dB, (float, list)) else False
+    actual_baud_rate = asanyarray(actual_baud_rate)
+    new_baud_rate = asanyarray(new_baud_rate)
+    snr_dB = asanyarray(snr_dB)
+    # if isinstance(snr_dB, (float, list)):
+    #     snr_dB = asanyarray(snr_dB)
+    #     flag_convert = True
 
     new_snr_dB = snr_dB - lin2dB(new_baud_rate / actual_baud_rate)
-
-    if flag_list:
-        new_snr_dB = list(new_snr_dB)
+    new_snr_dB = new_snr_dB.tolist() if flag_convert else new_snr_dB
 
     return new_snr_dB
 
@@ -198,7 +187,7 @@ def decimal_to_dms(decimal_degree: float) -> Tuple[int, int, int]:
     :param decimal_degree: Position in decimal degree
     :return: Position in degree, minute and second format
     """
-    sing = 1 if decimal_degree > 0 else -1
+    sing = 1 if decimal_degree > 0.0 else -1
     degrees = int(decimal_degree)
     minutes_float = abs(decimal_degree - degrees) * 60
     minutes = int(minutes_float)
@@ -216,6 +205,8 @@ def dms_to_decimal(degrees: int, minutes: int, seconds: int) -> float:
     :param seconds: Position second
     :return: Position in decimal degree
     """
+    if not all(isinstance(value, int) for value in [degrees, minutes, seconds]):
+        raise TypeError('Argument must be int')
     sign = -1 if any(value < 0 for value in [degrees, minutes, seconds]) else 1
 
     return sign * (abs(degrees) + abs(minutes) / 60 + abs(seconds) / 3600)
