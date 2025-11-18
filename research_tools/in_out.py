@@ -80,7 +80,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
     elif file_path.suffix in ['.txt']:
         with open(file_path, 'r') as file:
             data = file.read()
-    elif file_path.suffix in ['.pickle']:
+    elif file_path.suffix in ['.pickle', '.pkl', '.p']:
         with open(file_path, 'rb') as file:
             data = load_pickle(file)
     else:
@@ -134,7 +134,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str]
     elif file_path.suffix in ['.txt']:
         with open(file_path, 'w') as file:
             file.write(data)
-    elif file_path.suffix in ['.pickle']:
+    elif file_path.suffix in ['.pickle', '.pkl', '.p']:
         with open(file_path, 'wb') as file:
             # noinspection PyTypeChecker
             save_pickle(obj=data, file=file)
