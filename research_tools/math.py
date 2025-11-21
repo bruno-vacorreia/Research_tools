@@ -1,15 +1,13 @@
 """
 Module containing functions for mathematical operations.
 """
-import numpy as np
-from numpy import seterr, array, asarray, ndarray
+from numpy import seterr, array, asarray, ndarray, round as np_round
 from numpy.random import normal, Generator
 from math import sin, cos, asin, sqrt, radians
+from typing import Union
 
 from research_tools.conversions import lin2dB, dB2lin
-from research_tools.utils import Union
-
-RADIUS_EARTH_KM = 6371
+from research_tools.constants import RADIUS_EARTH_KM
 
 seterr(divide='ignore')
 
@@ -42,12 +40,9 @@ def normal_distribution_3_sigma(mean=0.0, minimum=-2.0, maximum=2.0, generator: 
     sigma = (maximum - minimum) / 6
 
     # Generate a random value from the normal distribution
-    if generator is None:
-        value = normal(mean, sigma)
-    else:
-        value = generator.normal(mean, sigma)
+    distribution = normal(mean, sigma) if generator is None else generator.normal(mean, sigma)
 
-    return value
+    return distribution
 
 
 def haversine_distance(sour_lat, sour_lon, dest_lat, dest_lon) -> float:
@@ -84,10 +79,10 @@ if __name__ == '__main__':
     print(round(snr_dB_sum(*first_array), 2))
 
     print(f'SNR matrix: {second_array}')
-    print(np.round(snr_dB_sum(*second_array), 2))
+    print(np_round(snr_dB_sum(*second_array), 2))
 
     print(f'SNR list with different sizes: {second_list}')
-    print(np.round(snr_dB_sum(*second_list), 2))
+    print(np_round(snr_dB_sum(*second_list), 2))
 
     # Example of normal distribution
     num_values = int(1e5)

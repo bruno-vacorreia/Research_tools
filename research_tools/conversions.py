@@ -1,12 +1,11 @@
 """
 Module containing functions for units conversion.
 """
-from numpy import log10, ndarray, dtype, seterr, array, asanyarray, any as np_any
-from scipy.constants import c
+from numpy import log10, ndarray, dtype, seterr, asanyarray, any as np_any
+from typing import Union, List, Any, Tuple
 
-from research_tools.utils import Union, List, Any, Tuple
+from research_tools.constants import DEFAULT_BAUD_RATE, c
 
-DEFAULT_BAUD_RATE = 12.5e9
 seterr(divide='ignore')
 
 
@@ -131,17 +130,9 @@ def convert_snr(snr_dB: Union[float, List[float], ndarray[Any, dtype]],
     :return: Converted SNR in dB
     """
     flag_convert = True if isinstance(snr_dB, (float, list)) else False
-    actual_baud_rate = asanyarray(actual_baud_rate)
-    new_baud_rate = asanyarray(new_baud_rate)
-    snr_dB = asanyarray(snr_dB)
-    # if isinstance(snr_dB, (float, list)):
-    #     snr_dB = asanyarray(snr_dB)
-    #     flag_convert = True
 
-    new_snr_dB = snr_dB - lin2dB(new_baud_rate / actual_baud_rate)
-    new_snr_dB = new_snr_dB.tolist() if flag_convert else new_snr_dB
-
-    return new_snr_dB
+    new_snr_dB = asanyarray(snr_dB) - lin2dB(asanyarray(new_baud_rate) / asanyarray(actual_baud_rate))
+    return new_snr_dB.tolist() if flag_convert else new_snr_dB
 
 
 def binary_to_hex(binary_str: str, same_length: bool = True) -> str:
@@ -154,11 +145,10 @@ def binary_to_hex(binary_str: str, same_length: bool = True) -> str:
     """
     # Convert binary string to an integer
     decimal = int(binary_str, 2)
-    # Convert integer to hexadecimal string
+    # Convert integer to hexadecimal string and remove the '0x' prefix
     hex_str = hex(decimal)[2:]
     hex_str = hex_str.zfill(len(binary_str) // 4) if same_length else hex_str
 
-    # Remove the '0x' prefix
     return hex_str
 
 
@@ -172,11 +162,10 @@ def hex_to_binary(hex_str: str, same_length: bool = True) -> str:
     """
     # Convert hexadecimal string to an integer
     decimal = int(hex_str, 16)
-    # Convert integer to binary string
+    # Convert integer to binary string and Remove the '0b' prefix
     binary_str = bin(decimal)[2:]
     binary_str = binary_str.zfill(len(hex_str) * 4) if same_length else binary_str
 
-    # Remove the '0b' prefix
     return binary_str
 
 

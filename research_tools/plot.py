@@ -13,9 +13,10 @@ from matplotlib.pyplot import figure, show, rc
 from mpl_toolkits.mplot3d import Axes3D
 from numpy import ndarray
 from seaborn import color_palette, set_palette, set_theme, reset_orig
+from typing import Union, Tuple, List, Literal
 
 from research_tools.in_out import get_or_create_folder
-from research_tools.utils import Union, Tuple, List, Literal, update_default_dict
+from research_tools.utils import update_default_dict
 
 # Default figure/axes parameters
 DEF_FIG_SIZE = (8, 5)

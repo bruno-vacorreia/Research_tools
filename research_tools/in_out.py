@@ -13,8 +13,9 @@ from shutil import rmtree, copy2, copytree
 from stat import S_IRWXU, S_IRWXG, S_IRWXO
 from zipfile import ZipFile, ZIP_DEFLATED
 from pickle import dump as save_pickle, load as load_pickle
+from typing import Union, Dict
 
-from research_tools.utils import update_default_dict, squeeze_dict, Union, Dict, format_dict_json, reduce_df_size
+from research_tools.utils import update_default_dict, squeeze_dict, format_dict_json, reduce_df_size
 from research_tools.error_handling import handleRemoveReadonly
 
 SAVE_DEFAULT_CSV_PARAMS = {'index': False, }

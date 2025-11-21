@@ -4,8 +4,7 @@ Module responsible to manage CPU cores parallelization.
 from abc import ABC
 from concurrent.futures import ProcessPoolExecutor
 from multiprocessing import cpu_count
-
-from research_tools.utils import Union
+from typing import Union
 
 
 class CpuParallel(ABC):
