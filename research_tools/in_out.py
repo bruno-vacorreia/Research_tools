@@ -29,7 +29,7 @@ PRETTY_PRINT_OPTION = True
 
 
 def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab_keys: bool = True,
-         downcast_type: bool = False, **kwargs) -> Union[dict, Dict[str, DataFrame], DataFrame, ndarray, str]:
+         downcast_type: bool = False, **kwargs) -> Union[dict, Dict[str, DataFrame], DataFrame, ndarray, str, object]:
     """
     Load main types of data used in our work.
     Working with the following extensions: .json, .csv, .mat, .npy, .npz, .xlsx, .xls, .ods, .txt, and .pickle.
@@ -90,7 +90,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
     return data
 
 
-def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str],
+def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str, object],
          json_pretty_print: bool = PRETTY_PRINT_OPTION, **kwargs):
     """
     Save the main types of data used in our work.
@@ -99,7 +99,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str]
 
     :param file_path: File path
     :param data: Data to save
-    :param json_pretty_print: Use the pretty print library to produce the json file
+    :param json_pretty_print: Use the pretty print library to produce the JSON file
     :param kwargs: Parameters of the respective save function
     :return:
     """
