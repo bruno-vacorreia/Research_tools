@@ -1,7 +1,7 @@
 """
 Module containing functions for units conversion.
 """
-from numpy import log10, ndarray, dtype, seterr, asanyarray, any as np_any
+from numpy import log10, ndarray, dtype, seterr, asanyarray, any as np_any, integer
 from typing import Union, List, Any, Tuple
 
 from research_tools.constants import DEFAULT_BAUD_RATE, c
@@ -194,7 +194,7 @@ def dms_to_decimal(degrees: int, minutes: int, seconds: int) -> float:
     :param seconds: Position second
     :return: Position in decimal degree
     """
-    if not all(isinstance(value, int) for value in [degrees, minutes, seconds]):
+    if not all(isinstance(value, (int, integer)) for value in [degrees, minutes, seconds]):
         raise TypeError('Argument must be int')
     sign = -1 if any(value < 0 for value in [degrees, minutes, seconds]) else 1
 
