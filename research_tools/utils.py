@@ -3,7 +3,7 @@ Module containing utility functions for data manipulation.
 """
 from numpy import (squeeze, ndarray, int_, intc, intp, int8, int16, int32, int64, uint8, uint16, uint32, uint64,
                    float16, float32, float64)
-from pandas import DataFrame, to_numeric
+from pandas import DataFrame, to_numeric, to_datetime
 from copy import deepcopy
 
 
@@ -74,7 +74,16 @@ def reduce_df_size(input_df: DataFrame) -> DataFrame:
     :param input_df: Input dataframe
     :return: Reduced dataframe
     """
-    # TODO: Implement a logic in order to cast to date-time type by the column name. Do it before the category casting.
+    # Cast columns to datetime type by column name before category casting
+    datetime_keywords = ['date', 'datetime', 'timestamp', 'time']
+    for column in input_df.columns:
+        if any(keyword in column.lower() for keyword in datetime_keywords):
+            try:
+                input_df[column] = to_datetime(input_df[column], errors='raise')
+            except (ValueError, TypeError) as e:
+                # TODO: Improve logic of the error handling
+                print(f"Could not convert column '{column}' to datetime: {e}")
+
     # Reduce the size of object types by converting them to category
     for column in input_df.select_dtypes(include='object').columns:
         desc = input_df[column].describe()
