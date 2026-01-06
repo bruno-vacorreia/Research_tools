@@ -6,7 +6,7 @@ from typing import Union, List, Any, Tuple
 
 from research_tools.constants import DEFAULT_BAUD_RATE, c
 
-seterr(divide='ignore')
+seterr(divide='ignore', invalid='ignore')
 
 
 def lin2dB(value_lin: Union[float, list, ndarray]) -> Union[float, list, ndarray]:
