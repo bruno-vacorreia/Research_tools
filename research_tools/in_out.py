@@ -49,7 +49,8 @@ def _convert_json_bool_strings(obj: Union[dict, list, Any]) -> Union[dict, list,
 
 
 def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab_keys: bool = True,
-         downcast_type: bool = False, **kwargs) -> Union[dict, Dict[str, DataFrame], DataFrame, ndarray, str, object]:
+         downcast_type: bool = False, encoding: str = 'utf-8',
+         **kwargs) -> Union[dict, Dict[str, DataFrame], DataFrame, ndarray, str, object]:
     """
     Load main types of data used in our work.
     Working with the following extensions: .json, .csv, .mat, .npy, .npz, .xlsx, .xls, .ods, .txt, and .pickle.
@@ -59,6 +60,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
     :param remove_matlab_keys: Option to remove the Matlab parameters from the dict (Used for .mat files).
     True if the data should remove the Matlab information.
     :param downcast_type: Option to apply a downcast function to the data (Used for .csv and Excel files)
+    :param encoding: Text encoding for .json, .csv, and .txt (default: utf-8)
     :param kwargs: Parameters of the respective load function
     :return: Data loaded
     :raises FileNotFoundError: If the path does not exist
@@ -73,11 +75,11 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
         raise ValueError(f'Path is not a file: {file_path}')
 
     if file_path.suffix in ['.json']:
-        with open(file_path, 'r') as file:
+        with open(file_path, 'r', encoding=encoding) as file:
             data = load_json(file, **kwargs)
         data = _convert_json_bool_strings(data)
     elif file_path.suffix in ['.csv']:
-        data = read_csv(filepath_or_buffer=file_path, **kwargs)
+        data = read_csv(filepath_or_buffer=file_path, encoding=encoding, **kwargs)
         if downcast_type:
             data = reduce_df_size(data)
     elif file_path.suffix in ['.mat']:
@@ -108,7 +110,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
                 for key, data_frame in data.items():
                     data[key] = reduce_df_size(data_frame)
     elif file_path.suffix in ['.txt']:
-        with open(file_path, 'r') as file:
+        with open(file_path, 'r', encoding=encoding) as file:
             data = file.read()
     elif file_path.suffix in ['.pickle', '.pkl', '.p']:
         with open(file_path, 'rb') as file:
@@ -120,7 +122,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
 
 
 def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str, object],
-         json_pretty_print: bool = PRETTY_PRINT_OPTION, **kwargs) -> None:
+         json_pretty_print: bool = PRETTY_PRINT_OPTION, encoding: str = 'utf-8', **kwargs) -> None:
     """
     Save the main types of data used in our work.
     Using the default parameters of the respective save function, unless set different.
@@ -129,6 +131,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
     :param file_path: File path
     :param data: Data to save
     :param json_pretty_print: Use the pretty print library to produce the JSON file
+    :param encoding: Text encoding for .json, .csv, and .txt (default: utf-8)
     :param kwargs: Parameters of the respective save function
     :return: None
     :raises TypeError: If the file extension is not supported
@@ -141,7 +144,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
 
     if file_path.suffix in ['.json']:
         data = format_dict_json(data)
-        with open(file_path, 'w') as file:
+        with open(file_path, 'w', encoding=encoding) as file:
             if not json_pretty_print:
                 save_json(obj=data, fp=file, **update_default_dict(SAVE_DEFAULT_JSON_PARAMS, kwargs))
             else:
@@ -153,7 +156,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
                 data_str = data_str.replace(' False', ' false')
                 file.write(data_str)
     elif file_path.suffix in ['.csv']:
-        data.to_csv(path_or_buf=file_path, **update_default_dict(SAVE_DEFAULT_CSV_PARAMS, kwargs))
+        data.to_csv(path_or_buf=file_path, encoding=encoding, **update_default_dict(SAVE_DEFAULT_CSV_PARAMS, kwargs))
     elif file_path.suffix in ['.mat']:
         save_mat(file_name=file_path, mdict=data, **update_default_dict(SAVE_DEFAULT_MAT_PARAMS, kwargs))
     elif file_path.suffix in ['.npy', '.npz']:
@@ -167,7 +170,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
                     dataframe.to_excel(writer, sheet_name=sheet_name,
                                        **update_default_dict(SAVE_DEFAULT_EXCEL_PARAMS, kwargs))
     elif file_path.suffix in ['.txt']:
-        with open(file_path, 'w') as file:
+        with open(file_path, 'w', encoding=encoding) as file:
             file.write(data)
     elif file_path.suffix in ['.pickle', '.pkl', '.p']:
         with open(file_path, 'wb') as file:
