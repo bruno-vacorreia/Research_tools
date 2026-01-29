@@ -13,7 +13,7 @@ from shutil import rmtree, copy2, copytree
 from stat import S_IRWXU, S_IRWXG, S_IRWXO
 from zipfile import ZipFile, ZIP_DEFLATED
 from pickle import dump as save_pickle, load as load_pickle
-from typing import Union, Dict
+from typing import Union, Dict, Any
 
 from research_tools.utils import update_default_dict, squeeze_dict, format_dict_json, reduce_df_size
 from research_tools.error_handling import handleRemoveReadonly
@@ -26,6 +26,26 @@ SAVE_DEFAULT_MAT_PARAMS = {}
 SAVE_DEFAULT_EXCEL_PARAMS = {'header': True, 'index': False, }
 LOAD_DEFAULT_EXCEL_PARAMS = {'sheet_name': None, }
 PRETTY_PRINT_OPTION = True
+
+
+def _convert_json_bool_strings(obj: Union[dict, list, Any]) -> Union[dict, list, Any]:
+    """
+    Recursively convert JSON 'true'/'false' strings to Python booleans in dicts and lists.
+    Used after loading JSON so that string literals "true" and "false" become Python True/False
+    at every nesting level, not only at the top level.
+
+    :param obj: A dict, list, or other value (typically from json.load).
+    :return: A copy of obj with string 'true' replaced by True and 'false' by False; other values unchanged.
+    """
+    if isinstance(obj, dict):
+        return {k: _convert_json_bool_strings(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_convert_json_bool_strings(item) for item in obj]
+    if obj == 'true':
+        return True
+    if obj == 'false':
+        return False
+    return obj
 
 
 def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab_keys: bool = True,
@@ -41,17 +61,21 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
     :param downcast_type: Option to apply a downcast function to the data (Used for .csv and Excel files)
     :param kwargs: Parameters of the respective load function
     :return: Data loaded
+    :raises FileNotFoundError: If the path does not exist
+    :raises ValueError: If the path exists but is not a file (e.g. a directory)
+    :raises TypeError: If the file extension is not supported
     """
     file_path = Path(file_path) if isinstance(file_path, str) else file_path
+
+    if not file_path.exists():
+        raise FileNotFoundError(f'File not found: {file_path}')
+    if not file_path.is_file():
+        raise ValueError(f'Path is not a file: {file_path}')
 
     if file_path.suffix in ['.json']:
         with open(file_path, 'r') as file:
             data = load_json(file, **kwargs)
-            for key, value in data.items():
-                if value == 'true':
-                    data[key] = True
-                elif value == 'false':
-                    data[key] = False
+        data = _convert_json_bool_strings(data)
     elif file_path.suffix in ['.csv']:
         data = read_csv(filepath_or_buffer=file_path, **kwargs)
         if downcast_type:
@@ -69,15 +93,20 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
             data = squeeze(data)
     elif file_path.suffix in ['.xlsx', '.xls', '.ods']:
         data = read_excel(io=file_path, **update_default_dict(LOAD_DEFAULT_EXCEL_PARAMS, kwargs))
-        if len(data.keys()) == 0:
-            raise ValueError('Excel file does not present any dataframe.')
-        if len(data.keys()) == 1:
-            data = data[list(data.keys())[0]]
+        # read_excel with sheet_name=None returns dict; with specific sheet_name returns a single DataFrame
+        if isinstance(data, DataFrame):
             if downcast_type:
                 data = reduce_df_size(data)
-        elif len(data.keys()) > 1 and downcast_type:
-            for key, data_frame in data.items():
-                data[key] = reduce_df_size(data_frame)
+        else:
+            if len(data.keys()) == 0:
+                raise ValueError('Excel file does not present any dataframe.')
+            if len(data.keys()) == 1:
+                data = data[list(data.keys())[0]]
+                if downcast_type:
+                    data = reduce_df_size(data)
+            elif len(data.keys()) > 1 and downcast_type:
+                for key, data_frame in data.items():
+                    data[key] = reduce_df_size(data_frame)
     elif file_path.suffix in ['.txt']:
         with open(file_path, 'r') as file:
             data = file.read()
@@ -85,7 +114,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
         with open(file_path, 'rb') as file:
             data = load_pickle(file)
     else:
-        raise TypeError('Load function not implemented for "{}" type'.format(file_path.suffix))
+        raise TypeError(f'Load function not implemented for "{file_path.suffix}" type')
 
     return data
 
@@ -101,9 +130,13 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
     :param data: Data to save
     :param json_pretty_print: Use the pretty print library to produce the JSON file
     :param kwargs: Parameters of the respective save function
-    :return:
+    :return: None
+    :raises TypeError: If the file extension is not supported
     """
     file_path = Path(file_path) if isinstance(file_path, str) else file_path
+
+    if not file_path.parent.exists():
+        get_or_create_folder(file_path.parent)
 
     if file_path.suffix in ['.json']:
         data = format_dict_json(data)
@@ -140,7 +173,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
             # noinspection PyTypeChecker
             save_pickle(obj=data, file=file)
     else:
-        raise TypeError('Save function not implemented for "{}" type'.format(file_path.suffix))
+        raise TypeError(f'Save function not implemented for "{file_path.suffix}" type')
 
 
 def get_or_create_folder(folder_path: Union[Path, str]) -> Path:
