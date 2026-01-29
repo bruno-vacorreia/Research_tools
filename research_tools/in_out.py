@@ -62,7 +62,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
     :param kwargs: Parameters of the respective load function
     :return: Data loaded
     :raises FileNotFoundError: If the path does not exist
-    :raises ValueError: If the path exists but is not a file (e.g. a directory)
+    :raises ValueError: If the path exists but is not a file (e.g. a directory), or if an Excel file has no dataframes
     :raises TypeError: If the file extension is not supported
     """
     file_path = Path(file_path) if isinstance(file_path, str) else file_path
@@ -120,7 +120,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
 
 
 def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str, object],
-         json_pretty_print: bool = PRETTY_PRINT_OPTION, **kwargs):
+         json_pretty_print: bool = PRETTY_PRINT_OPTION, **kwargs) -> None:
     """
     Save the main types of data used in our work.
     Using the default parameters of the respective save function, unless set different.
@@ -132,6 +132,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
     :param kwargs: Parameters of the respective save function
     :return: None
     :raises TypeError: If the file extension is not supported
+    :raises OSError: On I/O errors when creating the parent directory or writing the file
     """
     file_path = Path(file_path) if isinstance(file_path, str) else file_path
 
@@ -182,6 +183,7 @@ def get_or_create_folder(folder_path: Union[Path, str]) -> Path:
 
     :param folder_path: Folder path
     :return: Same folder path, but with created folder if it does not exist
+    :raises OSError: If the folder cannot be created (e.g. permission denied)
     """
     folder_path = Path(folder_path) if isinstance(folder_path, str) else folder_path
 
@@ -199,6 +201,7 @@ def copy_file_or_folder(source_path: Union[Path, str], destination_path: Union[P
     :param destination_path: Destination folder
     :param delete: Option to delete the file/folder after copying
     :return: None
+    :raises TypeError: If source path is neither a file nor a directory
     """
     source_path = Path(source_path) if isinstance(source_path, str) else source_path
     destination_path = Path(destination_path) if isinstance(destination_path, str) else destination_path
@@ -220,7 +223,9 @@ def remove_file_or_folder_and_content(file_path: Union[Path, str], force: bool =
 
     :param file_path: File or folder path.
     :param force: Option to force the deletion if the error is related to access .
-    :return:
+    :return: None
+    :raises ValueError: If path is not a file or directory
+    :raises OSError: On I/O or permission errors during deletion
     """
     file_path = Path(file_path) if isinstance(file_path, str) else file_path
 
@@ -237,19 +242,22 @@ def remove_file_or_folder_and_content(file_path: Union[Path, str], force: bool =
         raise ValueError('Invalid type to delete. Not folder or file')
 
 
-def zip_folder_and_content(folder_path: Union[Path, str], name: str = None, delete_folder: bool = False):
+def zip_folder_and_content(folder_path: Union[Path, str], name: str = None, delete_folder: bool = False) -> Path:
     """
     Function to zip the folder and its content.
 
     :param folder_path: Folder path
     :param name: Name of the zip file (String to be attached at the folder path)
     :param delete_folder: Option to delete the folder after zip
-    :return:
+    :return: Path to the created zip file
+    :raises FileNotFoundError: If the folder does not exist
+    :raises OSError: On I/O errors when creating the zip or writing files
     """
     folder_path = Path(folder_path) if isinstance(folder_path, str) else folder_path
     name = folder_path.stem if name is None else name
+    zip_path = folder_path.parent / f'{name}.zip'
 
-    with ZipFile(folder_path.parent / f'{name}.zip', 'w', ZIP_DEFLATED) as zip_file:
+    with ZipFile(zip_path, 'w', ZIP_DEFLATED) as zip_file:
         for root, dirs, files in walk(folder_path):
             for file in files:
                 file_path = path.join(root, file)
@@ -259,9 +267,11 @@ def zip_folder_and_content(folder_path: Union[Path, str], name: str = None, dele
     if delete_folder:
         remove_file_or_folder_and_content(folder_path, force=True)
 
+    return zip_path
+
 
 def extract_to_folder(file_path: Union[Path, str], folder_name: str = None, output_path: Union[str, Path] = None,
-                      delete_file: bool = False):
+                      delete_file: bool = False) -> None:
     """
     Function to extract a zip file to a folder.
 
@@ -269,7 +279,10 @@ def extract_to_folder(file_path: Union[Path, str], folder_name: str = None, outp
     :param folder_name: New folder name (Optional)
     :param output_path: Output path (Optional)
     :param delete_file: Option to delete the extracted file
-    :return:
+    :return: None
+    :raises FileNotFoundError: If the zip file does not exist
+    :raises zipfile.BadZipFile: If the file is not a valid zip file
+    :raises OSError: On I/O errors when extracting or creating the output folder
     """
     file_path = Path(file_path) if isinstance(file_path, str) else file_path
     output_path = Path(output_path) if isinstance(output_path, str) else output_path
@@ -280,16 +293,18 @@ def extract_to_folder(file_path: Union[Path, str], folder_name: str = None, outp
     with ZipFile(file_path, 'r') as zip_file:
         zip_file.extractall(path=output_path / folder_name)
     if delete_file:
-        file_path.unlink()
+        remove_file_or_folder_and_content(file_path, force=True)
 
 
-def create_new_json(file_path: Union[Path, str], num_entrances: int = 2):
+def create_new_json(file_path: Union[Path, str], num_entrances: int = 2) -> None:
     """
-    Create a generic .json file with a fixed values of entrance.
+    Create a generic .json file with a fixed number of entries.
 
     :param file_path: File path
-    :param num_entrances: Number of entrances to create
-    :return:
+    :param num_entrances: Number of entries to create
+    :return: None
+    :raises TypeError: If the file extension is not supported (delegates to save)
+    :raises OSError: If the file cannot be written
     """
     new_dict = {f'key_{index}': f'value_{index}' for index in range(1, num_entrances + 1)}
     save(file_path=file_path, data=new_dict, json_pretty_print=False)
