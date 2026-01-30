@@ -19,13 +19,28 @@ from research_tools.utils import update_default_dict, squeeze_dict, format_dict_
 from research_tools.error_handling import handleRemoveReadonly
 
 SAVE_DEFAULT_CSV_PARAMS = {'index': False, }
+"""Used by save() for .csv (e.g. index=False)."""
+
 SAVE_DEFAULT_JSON_PARAMS = {'indent': 2, }
+"""Used by save() for .json when json_pretty_print is False."""
+
 SAVE_DEFAULT_PRETTY_PRINT_JSON_PARAMS = {'indent': 2, 'width': 120, 'compact': True, 'sort_dicts': False, }
+"""Used by save() for .json when json_pretty_print is True."""
+
 SAVE_DEFAULT_NPY_PARAMS = {}
+"""Used by save() for .npy/.npz. Empty by default; pass kwargs to save() as needed."""
+
 SAVE_DEFAULT_MAT_PARAMS = {}
+"""Used by save() for .mat. Empty by default; add e.g. do_compression=True in kwargs to save() to reduce file size."""
+
 SAVE_DEFAULT_EXCEL_PARAMS = {'header': True, 'index': False, }
+"""Used by save() for Excel (.xlsx, .xls, .ods)."""
+
 LOAD_DEFAULT_EXCEL_PARAMS = {'sheet_name': None, }
+"""Used by load() for Excel; sheet_name=None loads all sheets as a dict."""
+
 PRETTY_PRINT_OPTION = True
+"""Default for json_pretty_print in save() when writing .json."""
 
 
 def _convert_json_bool_strings(obj: Union[dict, list, Any]) -> Union[dict, list, Any]:
