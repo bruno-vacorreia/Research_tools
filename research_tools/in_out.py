@@ -1,5 +1,10 @@
 """
 Module containing functions for input and output of data, and for folder creation and paths.
+
+Supported formats (load and save): .json, .csv, .mat, .npy, .npz, .xlsx, .xls, .ods, .txt, .pickle, .pkl, .p.
+
+Dependencies: pandas, numpy, scipy, openpyxl (for Excel), plus standard library (pathlib, os, json, pickle,
+zipfile, shutil).
 """
 from pathlib import Path
 from os.path import exists, isfile
@@ -70,17 +75,19 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
     Load main types of data used in our work.
     Working with the following extensions: .json, .csv, .mat, .npy, .npz, .xlsx, .xls, .ods, .txt, and .pickle.
 
-    :param file_path: File path
-    :param squeeze_arrays: Option to squeeze arrays within the dict (Used for numpy array and .mat files)
-    :param remove_matlab_keys: Option to remove the Matlab parameters from the dict (Used for .mat files).
-    True if the data should remove the Matlab information.
-    :param downcast_type: Option to apply a downcast function to the data (Used for .csv and Excel files)
-    :param encoding: Text encoding for .json, .csv, and .txt (default: utf-8)
-    :param kwargs: Parameters of the respective load function
-    :return: Data loaded
-    :raises FileNotFoundError: If the path does not exist
-    :raises ValueError: If the path exists but is not a file (e.g. a directory), or if an Excel file has no dataframes
-    :raises TypeError: If the file extension is not supported
+    :param file_path: File path (Path or str).
+    :param squeeze_arrays: If True, squeeze arrays in the result (for .npy, .npz, .mat).
+    :param remove_matlab_keys: If True, remove Matlab metadata keys from .mat data.
+    :param downcast_type: If True, downcast dtypes for .csv and Excel to reduce memory.
+    :param encoding: Text encoding for .json, .csv, and .txt. Defaults to utf-8.
+    :param kwargs: Passed to the underlying load function (e.g. pandas, json).
+    :return: Loaded data (type depends on file format).
+    :raises FileNotFoundError: If the path does not exist.
+    :raises ValueError: If the path exists but is not a file (e.g. a directory), or if an Excel file has no dataframes.
+    :raises TypeError: If the file extension is not supported.
+
+    Note:
+        For .json, string values 'true' and 'false' are converted to Python booleans recursively.
     """
     file_path = Path(file_path) if isinstance(file_path, str) else file_path
 
@@ -137,18 +144,21 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
 
 
 def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str, object],
-         json_pretty_print: bool = PRETTY_PRINT_OPTION, encoding: str = 'utf-8', **kwargs) -> None:
+         json_pretty_print: bool = PRETTY_PRINT_OPTION, encoding: str = 'utf-8', overwrite: bool = True,
+         **kwargs) -> None:
     """
     Save the main types of data used in our work.
     Using the default parameters of the respective save function, unless set different.
     Working with the following extensions: .json, .csv, .mat, .npy, .npz, .xlsx, .xls, .ods, .txt, and .pickle.
 
-    :param file_path: File path
-    :param data: Data to save
-    :param json_pretty_print: Use the pretty print library to produce the JSON file
-    :param encoding: Text encoding for .json, .csv, and .txt (default: utf-8)
-    :param kwargs: Parameters of the respective save function
+    :param file_path: File path (Path or str).
+    :param data: Data to save (dict, DataFrame, ndarray, str, or object for pickle).
+    :param json_pretty_print: If True, write .json with pformat-style pretty printing.
+    :param encoding: Text encoding for .json, .csv, and .txt. Defaults to utf-8.
+    :param overwrite: If False, raise FileExistsError when the file already exists. Defaults to True.
+    :param kwargs: Passed to the underlying save function (e.g. pandas, scipy).
     :return: None
+    :raises FileExistsError: If overwrite is False and the file already exists.
     :raises TypeError: If the file extension is not supported
     :raises OSError: On I/O errors when creating the parent directory or writing the file
     """
@@ -156,6 +166,9 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
 
     if not file_path.parent.exists():
         get_or_create_folder(file_path.parent)
+
+    if not overwrite and file_path.is_file():
+        raise FileExistsError('File already exists: {}'.format(file_path))
 
     if file_path.suffix in ['.json']:
         data = format_dict_json(data)
@@ -184,6 +197,8 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
                 for sheet_name, dataframe in data.items():
                     dataframe.to_excel(writer, sheet_name=sheet_name,
                                        **update_default_dict(SAVE_DEFAULT_EXCEL_PARAMS, kwargs))
+        else:
+            raise TypeError('For Excel files, data must be a DataFrame or a dict of DataFrames.')
     elif file_path.suffix in ['.txt']:
         with open(file_path, 'w', encoding=encoding) as file:
             file.write(data)
@@ -197,9 +212,9 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
 
 def get_or_create_folder(folder_path: Union[Path, str]) -> Path:
     """
-    Creates entire folder path if it does not exist.
+    Create the folder path if it does not exist.
 
-    :param folder_path: Folder path
+    :param folder_path: Folder path (Path or str).
     :return: Same folder path, but with created folder if it does not exist
     :raises OSError: If the folder cannot be created (e.g. permission denied)
     """
@@ -210,14 +225,15 @@ def get_or_create_folder(folder_path: Union[Path, str]) -> Path:
 
     return folder_path
 
+
 def copy_file_or_folder(source_path: Union[Path, str], destination_path: Union[Path, str],
                         delete: bool = False) -> None:
     """
     Copy a file or a folder and its content, possibly forcing the deletion afterward.
 
-    :param source_path: Source file or folder
-    :param destination_path: Destination folder
-    :param delete: Option to delete the file/folder after copying
+    :param source_path: Source file or folder (Path or str).
+    :param destination_path: Destination directory (Path or str).
+    :param delete: If True, delete the source after copying.
     :return: None
     :raises TypeError: If source path is neither a file nor a directory
     """
@@ -239,8 +255,8 @@ def remove_file_or_folder_and_content(file_path: Union[Path, str], force: bool =
     """
     Delete a file or a folder and its content, possibly forcing the deletion.
 
-    :param file_path: File or folder path.
-    :param force: Option to force the deletion if the error is related to access .
+    :param file_path: File or folder path (Path or str).
+    :param force: If True, force deletion (e.g. for read-only files or directories).
     :return: None
     :raises ValueError: If path is not a file or directory
     :raises OSError: On I/O or permission errors during deletion
@@ -262,11 +278,11 @@ def remove_file_or_folder_and_content(file_path: Union[Path, str], force: bool =
 
 def zip_folder_and_content(folder_path: Union[Path, str], name: str = None, delete_folder: bool = False) -> Path:
     """
-    Function to zip the folder and its content.
+    Zip the folder and its content.
 
-    :param folder_path: Folder path
-    :param name: Name of the zip file (String to be attached at the folder path)
-    :param delete_folder: Option to delete the folder after zip
+    :param folder_path: Folder path to zip.
+    :param name: Name of the zip file. Defaults to folder stem if None.
+    :param delete_folder: If True, delete the folder after zipping.
     :return: Path to the created zip file
     :raises FileNotFoundError: If the folder does not exist
     :raises OSError: On I/O errors when creating the zip or writing files
@@ -291,12 +307,12 @@ def zip_folder_and_content(folder_path: Union[Path, str], name: str = None, dele
 def extract_to_folder(file_path: Union[Path, str], folder_name: str = None, output_path: Union[str, Path] = None,
                       delete_file: bool = False) -> None:
     """
-    Function to extract a zip file to a folder.
+    Extract a zip file to a folder.
 
-    :param file_path: Path to the file
-    :param folder_name: New folder name (Optional)
-    :param output_path: Output path (Optional)
-    :param delete_file: Option to delete the extracted file
+    :param file_path: Path to the zip file.
+    :param folder_name: Name for the extracted folder. Defaults to zip file stem if None.
+    :param output_path: Directory where the folder will be created. Defaults to zip file parent if None.
+    :param delete_file: If True, delete the zip file after extracting.
     :return: None
     :raises FileNotFoundError: If the zip file does not exist
     :raises zipfile.BadZipFile: If the file is not a valid zip file
