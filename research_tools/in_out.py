@@ -136,6 +136,7 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
             if downcast_type:
                 data = reduce_df_size(data)
         else:
+            # data is dict of sheet name -> DataFrame (from read_excel with sheet_name=None)
             if len(data.keys()) == 0:
                 raise ValueError('Excel file does not present any dataframe.')
             if len(data.keys()) == 1:
@@ -178,6 +179,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
     """
     file_path = Path(file_path) if isinstance(file_path, str) else file_path
 
+    # Create parent directory so saving to a new path (e.g. output/results/file.csv) does not fail
     if not file_path.parent.exists():
         get_or_create_folder(file_path.parent)
 
@@ -190,8 +192,8 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
             if not json_pretty_print:
                 save_json(obj=data, fp=file, **update_default_dict(SAVE_DEFAULT_JSON_PARAMS, kwargs))
             else:
+                # pformat outputs Python repr; convert to valid JSON (None->null, True->true, False->false, '->")
                 data_str = pformat(data, **update_default_dict(SAVE_DEFAULT_PRETTY_PRINT_JSON_PARAMS, kwargs))
-                # Replace ' and None symbols
                 data_str = data_str.replace("'", '"')
                 data_str = data_str.replace(' None', ' null')
                 data_str = data_str.replace(' True', ' true')
@@ -207,6 +209,7 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
         if isinstance(data, DataFrame):
             data.to_excel(excel_writer=file_path, **update_default_dict(SAVE_DEFAULT_EXCEL_PARAMS, kwargs))
         elif isinstance(data, dict):
+            # Dict of sheet name -> DataFrame; sanitize names (Excel: max 31 chars, no \/:*?[]) and ensure uniqueness
             with ExcelWriter(file_path, engine='openpyxl') as writer:
                 used_sheet_names = set()
                 for sheet_name, dataframe in data.items():
