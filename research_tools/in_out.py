@@ -68,6 +68,20 @@ def _convert_json_bool_strings(obj: Union[dict, list, Any]) -> Union[dict, list,
     return obj
 
 
+def _sanitize_excel_sheet_name(name: str, max_length: int = 31) -> str:
+    """
+    Sanitize a string for use as an Excel sheet name.
+    Excel forbids \\ / ? * [ ] : in sheet names and limits length to 31 characters.
+    """
+    forbidden = '\\/:*?[]'
+    s = str(name).strip().strip("'")
+    for c in forbidden:
+        s = s.replace(c, '_')
+    if len(s) > max_length:
+        s = s[:max_length]
+    return s or 'Sheet'
+
+
 def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab_keys: bool = True,
          downcast_type: bool = False, encoding: str = 'utf-8',
          **kwargs) -> Union[dict, Dict[str, DataFrame], DataFrame, ndarray, str, object]:
@@ -194,8 +208,19 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
             data.to_excel(excel_writer=file_path, **update_default_dict(SAVE_DEFAULT_EXCEL_PARAMS, kwargs))
         elif isinstance(data, dict):
             with ExcelWriter(file_path, engine='openpyxl') as writer:
+                used_sheet_names = set()
                 for sheet_name, dataframe in data.items():
-                    dataframe.to_excel(writer, sheet_name=sheet_name,
+                    safe_name = _sanitize_excel_sheet_name(sheet_name)
+                    while safe_name in used_sheet_names:
+                        base = (safe_name[:28] if len(safe_name) >= 28 else safe_name).rstrip('_')
+                        n = 1
+                        candidate = (base + '_' + str(n))[:31]
+                        while candidate in used_sheet_names:
+                            n += 1
+                            candidate = (base + '_' + str(n))[:31]
+                        safe_name = candidate
+                    used_sheet_names.add(safe_name)
+                    dataframe.to_excel(writer, sheet_name=safe_name,
                                        **update_default_dict(SAVE_DEFAULT_EXCEL_PARAMS, kwargs))
         else:
             raise TypeError('For Excel files, data must be a DataFrame or a dict of DataFrames.')
