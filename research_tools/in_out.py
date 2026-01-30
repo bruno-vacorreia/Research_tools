@@ -314,17 +314,17 @@ def extract_to_folder(file_path: Union[Path, str], folder_name: str = None, outp
         remove_file_or_folder_and_content(file_path, force=True)
 
 
-def create_new_json(file_path: Union[Path, str], num_entrances: int = 2) -> None:
+def create_new_json(file_path: Union[Path, str], num_entries: int = 2) -> None:
     """
     Create a generic .json file with a fixed number of entries.
 
-    :param file_path: File path
-    :param num_entrances: Number of entries to create
+    :param file_path: File path (Path or str).
+    :param num_entries: Number of entries (key-value pairs) to create. Defaults to 2.
     :return: None
     :raises TypeError: If the file extension is not supported (delegates to save)
     :raises OSError: If the file cannot be written
     """
-    new_dict = {f'key_{index}': f'value_{index}' for index in range(1, num_entrances + 1)}
+    new_dict = {f'key_{index}': f'value_{index}' for index in range(1, num_entries + 1)}
     save(file_path=file_path, data=new_dict, json_pretty_print=False)
 
 
