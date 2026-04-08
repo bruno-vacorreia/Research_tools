@@ -51,16 +51,16 @@ def format_dict_json(input_dict: dict) -> dict:
     """
     new_dict = {}
     for key, value in input_dict.items():
-        if isinstance(value, LIST_FLOAT_TYPES):
+        if isinstance(value, (list, str, bool)) or value is None:
+            new_dict[key] = value
+        elif isinstance(value, dict):
+            new_dict[key] = format_dict_json(value)
+        elif isinstance(value, ndarray):
+            new_dict[key] = value.tolist()
+        elif isinstance(value, LIST_FLOAT_TYPES):
             new_dict[key] = float(value)
         elif isinstance(value, LIST_INTEGERS_TYPES):
             new_dict[key] = int(value)
-        elif isinstance(value, ndarray):
-            new_dict[key] = value.tolist()
-        elif isinstance(value, dict):
-            new_dict[key] = format_dict_json(value)
-        elif isinstance(value, (list, str, bool)) or value is None:
-            new_dict[key] = value
         else:
             raise TypeError(f'Unsupported type for value in dict: {type(value)}')
     return new_dict
