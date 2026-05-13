@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "research_tools"
+version = "0.3.6"
+description = "Set of tools to be used in scientific research projects."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "pandas",
+    "seaborn",
+    "pyarrow",
+    "rich",
+    "xlrd",
+    "openpyxl",
+    "odfpy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
+
+[tool.setuptools.packages.find]
+exclude = ["dump_data*", "tests*", "build*"]
