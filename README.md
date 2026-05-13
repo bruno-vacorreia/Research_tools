@@ -1,29 +1,71 @@
-# Set of tools to be used in scientific research projects.
+# research_tools
 
-This project provides several functions with default parameters to use in scientific manipulation, data management, 
-plot functions, among other features.
+Small Python helpers for scientific workflows: unit conversions, I/O across common file formats, plotting utilities, progress feedback, and related utilities. The package favors sensible defaults so you can call functions with minimal configuration.
+
+**Python:** 3.12 or newer (see [`pyproject.toml`](pyproject.toml)).
+
+## Installation
+
+From the repository root:
+
+```bash
+pip install .
+```
+
+With optional development dependencies (tests, coverage, Ruff):
+
+```bash
+pip install -e ".[dev]"
+```
+
+Runtime dependencies include NumPy, SciPy, pandas, Matplotlib, Seaborn, PyArrow, Rich, and libraries used for spreadsheets (OpenPyXL, xlrd, odfpy). The full list is in [`pyproject.toml`](pyproject.toml).
 
 ## Data I/O
 
-Data format is inferred from the file extension. Use [research_tools/in_out.py](research_tools/in_out.py) for loading and saving common formats (JSON, CSV, Excel, MATLAB, NumPy, text, pickle).
+Format is chosen from the file extension. Use [`research_tools/in_out.py`](research_tools/in_out.py) for `load` and `save`.
+
+**Supported extensions:** `.json`, `.csv`, `.mat`, `.npy`, `.npz`, `.xlsx`, `.xls`, `.ods`, `.txt`, `.pickle`, `.pkl`, `.p` (pickle).
 
 ```python
 from research_tools.in_out import load, save
 
-data = load('path_to_folder/config.json')
-df = load('path_to_folder/data.csv', downcast_type=True)
-save('path_to_folder/out.json', data)
-save('path_to_folder/out.csv', df)
+data = load("path/to/config.json")
+df = load("path/to/data.csv", downcast_type=True)
+save("path/to/out.json", data)
+save("path/to/out.csv", df)
 ```
 
-## Modules
+## Package layout
 
-- **conversions.py**: Functions for units conversion (e.g., linear to dB).
-- **dump_functions.py**: Simple functions for debugging purposes.
-- **error_handling.py**: Functions for handling file/folder errors, especially on Windows.
-- **in_out.py**: Functions for data input/output, folder creation, and path management.
-- **math.py**: Functions for mathematical operations and calculations.
-- **parallelization.py**: Tools for managing CPU core parallelization.
-- **plot.py**: Functions for plotting and figure management.
-- **progress_bar.py**: Functions for creating and managing progress bars.
-- **utils.py**: Utility functions for data manipulation.
+| Module | Role |
+| --- | --- |
+| [`conversions.py`](research_tools/conversions.py) | Unit and signal conversions (e.g. linear ↔ dB, frequency ↔ wavelength). |
+| [`constants.py`](research_tools/constants.py) | Shared constants. |
+| [`dump_functions.py`](research_tools/dump_functions.py) | Lightweight helpers for debugging and inspection. |
+| [`error_handling.py`](research_tools/error_handling.py) | File and folder error handling (including Windows read-only cases). |
+| [`in_out.py`](research_tools/in_out.py) | Load/save, paths, and folder creation. |
+| [`math.py`](research_tools/math.py) | Math helpers built on the conversions utilities. |
+| [`parallelization.py`](research_tools/parallelization.py) | CPU parallelization helpers. |
+| [`plot.py`](research_tools/plot.py) | Plotting and figure management. |
+| [`progress_bar.py`](research_tools/progress_bar.py) | Progress display (Rich-based). |
+| [`utils.py`](research_tools/utils.py) | General utilities (e.g. dict defaults, DataFrame size reduction). |
+
+## Development
+
+Run the test suite from the repository root:
+
+```bash
+python -m pytest
+```
+
+With coverage (requires the `dev` extra):
+
+```bash
+python -m pytest --cov=research_tools --cov-report=term-missing
+```
+
+Lint:
+
+```bash
+ruff check .
+```
