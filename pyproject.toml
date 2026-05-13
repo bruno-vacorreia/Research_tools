@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "research_tools"
-version = "0.3.6"
+version = "0.4.0"
 description = "Set of tools to be used in scientific research projects."
 readme = "README.md"
 requires-python = ">=3.12"
