@@ -19,6 +19,7 @@ dependencies = [
     "xlrd",
     "openpyxl",
     "odfpy",
+    "py7zr",
 ]
 
 [project.optional-dependencies]

@@ -3,8 +3,8 @@ Module containing functions for input and output of data, and for folder creatio
 
 Supported formats (load and save): .json, .csv, .mat, .npy, .npz, .xlsx, .xls, .ods, .txt, .pickle, .pkl, .p.
 
-Dependencies: pandas, numpy, scipy, openpyxl (for Excel), plus standard library (pathlib, os, json, pickle,
-zipfile, shutil).
+Dependencies: pandas, numpy, scipy, openpyxl (for Excel), py7zr (for .7z archives), plus standard library
+(pathlib, os, json, pickle, zipfile, shutil).
 """
 from pathlib import Path
 from os.path import exists, isfile
@@ -19,6 +19,7 @@ from stat import S_IRWXU, S_IRWXG, S_IRWXO
 from zipfile import ZipFile, ZIP_DEFLATED
 from pickle import dump as save_pickle, load as load_pickle
 from typing import Union, Dict, Any
+from py7zr import FILTER_LZMA2, SevenZipFile
 
 from research_tools.utils import update_default_dict, squeeze_dict, format_dict_json, reduce_df_size
 from research_tools.error_handling import handleRemoveReadonly
@@ -43,6 +44,15 @@ SAVE_DEFAULT_EXCEL_PARAMS = {'header': True, 'index': False, }
 
 LOAD_DEFAULT_EXCEL_PARAMS = {'sheet_name': None, }
 """Used by load() for Excel; sheet_name=None loads all sheets as a dict."""
+
+ZIP_FOLDER_DEFAULT_ZIPFILE_PARAMS = {'mode': 'w', 'compression': ZIP_DEFLATED, 'compresslevel': 0}
+"""Used by zip_folder_and_content() for ZipFile (e.g. allowZip64, compresslevel via kwargs)."""
+
+ZIP_FOLDER_DEFAULT_7ZFILE_PARAMS = {
+    'filters': [{'id': FILTER_LZMA2, 'preset': 6}],
+}
+"""Used by zip_folder_and_content() for SevenZipFile when archive_format is .7z. Default is LZMA2 at preset 6
+(~balanced size vs speed); override via kwargs (e.g. filters, password, mp)."""
 
 PRETTY_PRINT_OPTION = True
 """Default for json_pretty_print in save() when writing .json."""
@@ -248,7 +258,7 @@ def get_or_create_folder(folder_path: Union[Path, str]) -> Path:
     """
     folder_path = Path(folder_path) if isinstance(folder_path, str) else folder_path
 
-    if not exists(folder_path):
+    if not folder_path.exists():
         makedirs(folder_path)
 
     return folder_path
@@ -304,32 +314,69 @@ def remove_file_or_folder_and_content(file_path: Union[Path, str], force: bool =
         raise ValueError('Invalid type to delete. Not folder or file')
 
 
-def zip_folder_and_content(folder_path: Union[Path, str], name: str = None, delete_folder: bool = False) -> Path:
+def _normalize_zip_folder_archive_format(archive_format: str) -> str:
     """
-    Zip the folder and its content.
+    Normalize user-facing archive format to ``.zip`` or ``.7z``.
+
+    :param archive_format: ``"zip"``, ``".zip"``, ``"7z"``, or ``".7z"`` (case-insensitive).
+    :return: ``".zip"`` or ``".7z"``.
+    :raises ValueError: If the format is empty, whitespace-only, or not ``zip`` / ``7z``.
+    """
+    key = str(archive_format).strip().lower()
+    if not key:
+        raise ValueError('archive_format cannot be empty. Use "zip" or "7z".')
+    if key in ('zip', '.zip'):
+        return '.zip'
+    if key in ('7z', '.7z'):
+        return '.7z'
+    raise ValueError(
+        f'Invalid archive_format {archive_format!r}: only "zip" and "7z" are supported '
+        f'(optional leading dot, case-insensitive).'
+    )
+
+
+def zip_folder_and_content(folder_path: Union[Path, str], name: str = None, delete_folder: bool = False,
+                           archive_format: str = 'zip', **kwargs) -> Path:
+    """
+    Zip the folder and its content into a ``.zip`` or ``.7z`` archive.
 
     :param folder_path: Folder path to zip.
-    :param name: Name of the zip file. Defaults to folder stem if None.
+    :param name: Base name of the archive file (without extension). Defaults to folder stem if None.
     :param delete_folder: If True, delete the folder after zipping.
-    :return: Path to the created zip file
+    :param archive_format: ``"zip"`` / ``".zip"`` or ``"7z"`` / ``".7z"`` (case-insensitive).
+    :param kwargs: Passed to the writer for the selected format after merging with defaults: ``ZipFile`` for
+        ``.zip`` (e.g. allowZip64, compresslevel), ``SevenZipFile`` for ``.7z`` (e.g. filters, password).
+    :return: Path to the created archive file
     :raises FileNotFoundError: If the folder does not exist
-    :raises OSError: On I/O errors when creating the zip or writing files
+    :raises OSError: On I/O errors when creating the archive or writing files
+    :raises ValueError: If ``archive_format`` is empty, whitespace-only, or not ``zip`` / ``7z``.
     """
     folder_path = Path(folder_path) if isinstance(folder_path, str) else folder_path
     name = folder_path.stem if name is None else name
-    zip_path = folder_path.parent / f'{name}.zip'
+    ext = _normalize_zip_folder_archive_format(archive_format)
+    archive_path = folder_path.parent / f'{name}{ext}'
 
-    with ZipFile(zip_path, 'w', ZIP_DEFLATED) as zip_file:
-        for root, dirs, files in walk(folder_path):
-            for file in files:
-                file_path = path.join(root, file)
-                arc_name = path.relpath(file_path, folder_path)
-                zip_file.write(file_path, arc_name)
+    if ext == '.zip':
+        with ZipFile(archive_path, **update_default_dict(ZIP_FOLDER_DEFAULT_ZIPFILE_PARAMS, kwargs)) as zip_file:
+            for root, dirs, files in walk(folder_path):
+                for file in files:
+                    file_path = path.join(root, file)
+                    arc_name = path.relpath(file_path, folder_path)
+                    zip_file.write(file_path, arc_name)
+    else:
+        with SevenZipFile(
+            archive_path, 'w', **update_default_dict(ZIP_FOLDER_DEFAULT_7ZFILE_PARAMS, kwargs)
+        ) as archive:
+            for root, dirs, files in walk(folder_path):
+                for file in files:
+                    file_path = path.join(root, file)
+                    arc_name = path.relpath(file_path, folder_path)
+                    archive.write(file_path, arc_name)
 
     if delete_folder:
         remove_file_or_folder_and_content(folder_path, force=True)
 
-    return zip_path
+    return archive_path
 
 
 def extract_to_folder(file_path: Union[Path, str], folder_name: str = None, output_path: Union[str, Path] = None,
