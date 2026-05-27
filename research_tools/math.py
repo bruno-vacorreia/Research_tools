@@ -25,6 +25,26 @@ def snr_dB_sum(*args) -> Union[float, ndarray]:
     return lin2dB(1 / snr_sum)
 
 
+def snr_dB_subtract(combined, *args) -> Union[float, ndarray]:
+    """
+    Remove one or more SNR contributions (in dB) from a combined SNR, using the same reciprocal-SNR model as
+    :func:`snr_dB_sum`.
+
+    If ``combined`` equals ``snr_dB_sum(*parts)`` for independent noise terms, then ``snr_dB_subtract(combined, *q)``
+    returns the SNR in dB for the merge of ``parts`` with every element of ``q`` removed (order of ``q`` does not
+    matter).
+
+    :param combined: Combined SNR in dB (typically from :func:`snr_dB_sum`).
+    :param args: One or more SNR values in dB to subtract from the combined reciprocal-noise budget.
+    :return: Resulting SNR in dB after subtraction in the reciprocal domain.
+    """
+    inv_snr = 1 / dB2lin(asarray(combined))
+    for arg in args:
+        inv_snr -= 1 / dB2lin(asarray(arg))
+
+    return lin2dB(1 / inv_snr)
+
+
 def normal_distribution_3_sigma(mean=0.0, minimum=-2.0, maximum=2.0, generator: Generator = None) -> float:
     """
     Function to generate a normal distribution with 3 standard deviations.
