@@ -84,8 +84,8 @@ def reduce_df_size(input_df: DataFrame) -> DataFrame:
                 # TODO: Improve logic of the error handling
                 print(f"Could not convert column '{column}' to datetime: {e}")
 
-    # Reduce the size of object types by converting them to category
-    for column in input_df.select_dtypes(include='object').columns:
+    # Reduce the size of object/string types by converting them to category
+    for column in input_df.select_dtypes(include=['object', 'string']).columns:
         desc = input_df[column].describe()
         if (desc['freq'] / desc['count']) > FIXED_PERCENTAGE_CATEGORY:
             input_df[column] = input_df[column].astype('category')

@@ -107,10 +107,12 @@ def test_reduce_df_size_datetime_casting(df_dict, expected_datetime_cols, expect
     for col in expected_datetime_cols:
         assert pd.api.types.is_datetime64_any_dtype(reduced[col]), f"Column {col} not converted to datetime"
     for col in expected_object_cols:
-        assert reduced[col].dtype == 'object'
+        assert pd.api.types.is_string_dtype(reduced[col])
+        assert not pd.api.types.is_datetime64_any_dtype(reduced[col])
     # Test with invalid date formats
     df_invalid = pd.DataFrame({'date': df['not_a_date'].values})
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         reduced_invalid = utils.reduce_df_size(df_invalid.copy())
-    assert reduced_invalid['date'].dtype == 'object'
+    assert pd.api.types.is_string_dtype(reduced_invalid['date'])
+    assert not pd.api.types.is_datetime64_any_dtype(reduced_invalid['date'])
