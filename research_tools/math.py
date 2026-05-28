@@ -4,7 +4,7 @@ Module containing functions for mathematical operations.
 from numpy import seterr, array, asarray, ndarray, round as np_round
 from numpy.random import normal, Generator
 from math import sin, cos, asin, sqrt, radians
-from typing import Union
+from typing import Union, Optional
 
 from research_tools.conversions import lin2dB, dB2lin
 from research_tools.constants import RADIUS_EARTH_KM
@@ -12,7 +12,7 @@ from research_tools.constants import RADIUS_EARTH_KM
 seterr(divide='ignore')
 
 
-def snr_dB_sum(*args) -> Union[float, ndarray]:
+def snr_dB_sum(*args: Union[float, list, ndarray]) -> Union[float, ndarray]:
     """
     Calculate the sum of Signal-to-Noise Ratios (SNR) given in decibels (dB).
 
@@ -25,7 +25,8 @@ def snr_dB_sum(*args) -> Union[float, ndarray]:
     return lin2dB(1 / snr_sum)
 
 
-def snr_dB_subtract(combined, *args) -> Union[float, ndarray]:
+def snr_dB_subtract(combined: Union[float, list, ndarray],
+                    *args: Union[float, list, ndarray]) -> Union[float, ndarray]:
     """
     Remove one or more SNR contributions (in dB) from a combined SNR, using the same reciprocal-SNR model as
     :func:`snr_dB_sum`.
@@ -45,7 +46,8 @@ def snr_dB_subtract(combined, *args) -> Union[float, ndarray]:
     return lin2dB(1 / inv_snr)
 
 
-def normal_distribution_3_sigma(mean=0.0, minimum=-2.0, maximum=2.0, generator: Generator = None) -> float:
+def normal_distribution_3_sigma(mean: float = 0.0, minimum: float = -2.0, maximum: float = 2.0,
+                                generator: Optional[Generator] = None) -> float:
     """
     Function to generate a normal distribution with 3 standard deviations.
 
@@ -65,7 +67,8 @@ def normal_distribution_3_sigma(mean=0.0, minimum=-2.0, maximum=2.0, generator: 
     return distribution
 
 
-def haversine_distance(sour_lat, sour_lon, dest_lat, dest_lon) -> float:
+def haversine_distance(sour_lat: float, sour_lon: float, dest_lat: float,
+                       dest_lon: float) -> float:
     """
     Computes the Haversine distance between two points.
 
