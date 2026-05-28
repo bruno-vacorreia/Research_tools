@@ -1,5 +1,8 @@
 """
-Module containing utility functions for data manipulation.
+Module containing general-purpose utilities for dictionaries and pandas DataFrames.
+
+Supports merging default parameter dicts, preparing nested structures for JSON export,
+squeezing NumPy arrays in dicts, and reducing DataFrame memory via dtype downcasting.
 """
 from numpy import (squeeze, ndarray, int_, intc, intp, int8, int16, int32, int64, uint8, uint16, uint32, uint64,
                    float16, float32, float64)
@@ -8,23 +11,29 @@ from copy import deepcopy
 
 
 FIXED_PERCENTAGE_CATEGORY = 0.1
-"""Percentage threshold to convert object type to category type in dataframe columns."""
+"""Minimum fraction of repeated values (``freq / count``) required to cast a string column to ``category``."""
+
 LIST_INTEGERS_TYPES = tuple([int, int_, intc, intp,
                              int8, int16, int32, int64,
                              uint8, uint16, uint32, uint64])
-"""Tuple of integer types."""
+"""Tuple of scalar integer types recognized by :func:`format_dict_json`."""
+
 LIST_FLOAT_TYPES = tuple([float, float16, float32, float64])
-"""Tuple of float types."""
+"""Tuple of scalar float types recognized by :func:`format_dict_json`."""
 
 
 def update_default_dict(default_dict: dict, new_dict: dict) -> dict:
     """
-    Update the default function parameters dict with new values of another dict.
-    If a key is not in the new dict, the default parameters of the default dict will be used.
+    Merge a default parameter dict with overrides without mutating the original.
 
-    :param default_dict: Dict of default parameters
-    :param new_dict: Dict of new parameters
-    :return: Updated dict with new parameters
+    Deep-copies ``default_dict``, then applies ``new_dict`` with :meth:`dict.update`. Keys present only
+    in ``default_dict`` are kept; keys in ``new_dict`` replace or add entries. Used throughout
+    :mod:`research_tools.in_out` and :mod:`research_tools.plot` to combine module defaults with
+    caller ``kwargs``.
+
+    :param default_dict: Base parameters (e.g. save/load defaults).
+    :param new_dict: Overrides supplied by the caller.
+    :return: New dict containing the merged parameters.
     """
     new_default_dict = deepcopy(default_dict)
     new_default_dict.update(new_dict)
@@ -34,20 +43,29 @@ def update_default_dict(default_dict: dict, new_dict: dict) -> dict:
 
 def squeeze_dict(input_dict: dict) -> dict:
     """
-    Squeeze all arrays within a dict.
+    Remove length-1 dimensions from NumPy arrays stored in a dict.
 
-    :param input_dict: Original dict
-    :return: New dict with squeezed arrays
+    Non-array values are copied unchanged. Applied recursively only for ndarray values at the top
+    level of ``input_dict`` (nested dicts are not walked). Used when preparing data for MATLAB
+    ``.mat`` export in :mod:`research_tools.in_out`.
+
+    :param input_dict: Mapping that may contain :class:`numpy.ndarray` values.
+    :return: New dict with the same keys; array values passed through :func:`numpy.squeeze`.
     """
     return {key: squeeze(value) if isinstance(value, ndarray) else value for key, value in input_dict.items()}
 
 
 def format_dict_json(input_dict: dict) -> dict:
     """
-    Format dictionary to save as a JSON file.
+    Recursively convert a dict to JSON-serializable Python types.
 
-    :param input_dict: Input dictionary
-    :return: Formatted dictionary
+    Preserves ``list``, ``str``, ``bool``, and ``None``. Converts nested dicts recursively,
+    NumPy arrays to lists, and NumPy scalar integers and floats to built-in ``int`` and ``float``.
+    Types outside this set raise :exc:`TypeError`.
+
+    :param input_dict: Arbitrarily nested mapping to prepare for :func:`json.dump`.
+    :return: New dict safe to serialize as JSON.
+    :raises TypeError: If a value has an unsupported type.
     """
     new_dict = {}
     for key, value in input_dict.items():
@@ -68,11 +86,21 @@ def format_dict_json(input_dict: dict) -> dict:
 
 def reduce_df_size(input_df: DataFrame) -> DataFrame:
     """
-    Change the type of each column based on its types/values to reduce the dataframe memory size.
-    Works for category, integer, and float values.
+    Downcast DataFrame columns in place to reduce memory usage.
 
-    :param input_df: Input dataframe
-    :return: Reduced dataframe
+    Processing order:
+
+    1. **Datetime** — Columns whose names contain ``date``, ``datetime``, ``timestamp``, or ``time``
+       (case-insensitive) are parsed with :func:`pandas.to_datetime`. Unparseable columns are left
+       unchanged and a message is printed.
+    2. **Category** — Object or string columns where the most frequent value accounts for more than
+       :data:`FIXED_PERCENTAGE_CATEGORY` of non-null rows are cast to ``category``.
+    3. **Integers** — ``int64`` columns are downcast to the smallest signed or unsigned integer
+       dtype that fits the data.
+    4. **Floats** — ``float64`` columns are downcast with :func:`pandas.to_numeric`.
+
+    :param input_df: DataFrame to optimize (modified in place).
+    :return: The same DataFrame instance with reduced dtypes.
     """
     # Cast columns to datetime type by column name before category casting
     datetime_keywords = ['date', 'datetime', 'timestamp', 'time']
