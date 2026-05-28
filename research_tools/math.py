@@ -1,5 +1,8 @@
 """
-Module containing functions for mathematical operations.
+Module containing mathematical utilities for research and signal-processing workflows.
+
+Includes reciprocal-SNR combination in decibels, bounded normal random sampling, and great-circle
+distance between geographic coordinates.
 """
 from numpy import seterr, array, asarray, ndarray, round as np_round
 from numpy.random import normal, Generator
@@ -14,10 +17,14 @@ seterr(divide='ignore')
 
 def snr_dB_sum(*args: Union[float, list, ndarray]) -> Union[float, ndarray]:
     """
-    Calculate the sum of Signal-to-Noise Ratios (SNR) given in decibels (dB).
+    Combine independent SNR contributions given in decibels (dB).
 
-    :param args: Variable length argument list of SNR values in dB.
-    :return: The combined SNR in dB.
+    Each argument is converted to linear SNR, summed in the reciprocal-noise domain
+    (``1/SNR_lin``), then converted back to dB via :func:`research_tools.conversions.lin2dB`.
+    Accepts scalars, lists, or NumPy arrays; array inputs are broadcast element-wise.
+
+    :param args: One or more SNR values in dB to combine.
+    :return: Combined SNR in dB, with the same shape as the array inputs when arrays are used.
     """
     snr_list = [1 / dB2lin(asarray(arg)) for arg in args]
     snr_sum = sum(snr_list)
@@ -28,12 +35,12 @@ def snr_dB_sum(*args: Union[float, list, ndarray]) -> Union[float, ndarray]:
 def snr_dB_subtract(combined: Union[float, list, ndarray],
                     *args: Union[float, list, ndarray]) -> Union[float, ndarray]:
     """
-    Remove one or more SNR contributions (in dB) from a combined SNR, using the same reciprocal-SNR model as
-    :func:`snr_dB_sum`.
+    Remove one or more SNR contributions (in dB) from a combined SNR.
 
-    If ``combined`` equals ``snr_dB_sum(*parts)`` for independent noise terms, then ``snr_dB_subtract(combined, *q)``
-    returns the SNR in dB for the merge of ``parts`` with every element of ``q`` removed (order of ``q`` does not
-    matter).
+    Uses the same reciprocal-SNR model as :func:`snr_dB_sum`. If ``combined`` equals
+    ``snr_dB_sum(*parts)`` for independent noise terms, then ``snr_dB_subtract(combined, *q)``
+    returns the SNR in dB for the merge of ``parts`` with every element of ``q`` removed;
+    the order of ``q`` does not matter.
 
     :param combined: Combined SNR in dB (typically from :func:`snr_dB_sum`).
     :param args: One or more SNR values in dB to subtract from the combined reciprocal-noise budget.
@@ -49,14 +56,18 @@ def snr_dB_subtract(combined: Union[float, list, ndarray],
 def normal_distribution_3_sigma(mean: float = 0.0, minimum: float = -2.0, maximum: float = 2.0,
                                 generator: Optional[Generator] = None) -> float:
     """
-    Function to generate a normal distribution with 3 standard deviations.
+    Draw a single sample from a normal distribution defined by a three-sigma range.
 
-    :param mean: Normal distribution mean
-    :param minimum: Normal distribution minimum
-    :param maximum: Normal distribution maximum
-    :param generator: Random generator to produce the distribution. If not provided, the numpy default generator is
-    used.
-    :return: Normal distribution value
+    The interval ``[minimum, maximum]`` is treated as mean ± 3σ, so
+    ``σ = (maximum - minimum) / 6``. Useful for modeling bounded random effects (e.g. splice loss)
+    when only the expected spread is known.
+
+    :param mean: Mean of the normal distribution.
+    :param minimum: Lower bound of the three-sigma range (μ − 3σ).
+    :param maximum: Upper bound of the three-sigma range (μ + 3σ).
+    :param generator: NumPy random generator for reproducible draws; if omitted,
+        :func:`numpy.random.normal` is used.
+    :return: One random sample from ``N(mean, σ)``.
     """
     # Calculate standard deviation using the 3-sigma rule
     sigma = (maximum - minimum) / 6
@@ -70,13 +81,16 @@ def normal_distribution_3_sigma(mean: float = 0.0, minimum: float = -2.0, maximu
 def haversine_distance(sour_lat: float, sour_lon: float, dest_lat: float,
                        dest_lon: float) -> float:
     """
-    Computes the Haversine distance between two points.
+    Compute the great-circle distance between two points on Earth.
 
-    :param sour_lat: Latitude of point 1
-    :param sour_lon: Longitude of point 1
-    :param dest_lat: Latitude of point 2
-    :param dest_lon: Longitude of point 2
-    :return: Haversine distance
+    Coordinates are given in decimal degrees. The result uses
+    :data:`research_tools.constants.RADIUS_EARTH_KM` and is returned in kilometers.
+
+    :param sour_lat: Latitude of the source point in degrees.
+    :param sour_lon: Longitude of the source point in degrees.
+    :param dest_lat: Latitude of the destination point in degrees.
+    :param dest_lon: Longitude of the destination point in degrees.
+    :return: Haversine distance in kilometers.
     """
     sour_lat, sour_lon, dest_lat, dest_lon = map(radians, [sour_lat, sour_lon, dest_lat, dest_lon])
 
