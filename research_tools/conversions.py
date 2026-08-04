@@ -9,7 +9,7 @@ from research_tools.constants import DEFAULT_BAUD_RATE, c
 seterr(divide='ignore', invalid='ignore')
 
 
-def lin2dB(value_lin: Union[float, list, ndarray]) -> Union[float, list, ndarray]:
+def lin2dB(value_lin: Union[int, float, list, ndarray]) -> Union[float, list, ndarray]:
     """
     Convert linear value to decibels (dB).
     Maintain the same input type.
@@ -17,13 +17,13 @@ def lin2dB(value_lin: Union[float, list, ndarray]) -> Union[float, list, ndarray
     :param value_lin: Linear value
     :return: Value in dB
     """
-    flag_convert = True if isinstance(value_lin, (float, list)) else False
+    flag_convert = True if isinstance(value_lin, (int, float, list)) else False
     value_lin = asanyarray(value_lin)
 
-    return (10 * log10(value_lin)).tolist()  if flag_convert else 10 * log10(value_lin)
+    return (10 * log10(value_lin)).tolist() if flag_convert else 10 * log10(value_lin)
 
 
-def lin2dBm(value_lin: Union[float, list, ndarray]) -> Union[float, list, ndarray]:
+def lin2dBm(value_lin: Union[int, float, list, ndarray]) -> Union[float, list, ndarray]:
     """
     Convert linear value to decibel-milliwatts (dBm).
     Maintain the same input type.
@@ -31,10 +31,10 @@ def lin2dBm(value_lin: Union[float, list, ndarray]) -> Union[float, list, ndarra
     :param value_lin: Linear value
     :return: Value in dBm
     """
-    flag_convert = True if isinstance(value_lin, (float, list)) else False
-    value_lin = asanyarray(value_lin)
+    flag_convert = True if isinstance(value_lin, (int, float, list)) else False
+    value_dBm = asanyarray(lin2dB(value_lin)) + 30
 
-    return (lin2dB(value_lin) + 30).tolist() if flag_convert else lin2dB(value_lin) + 30
+    return value_dBm.tolist() if flag_convert else value_dBm
 
 
 def dB2lin(value_dB: Union[float, list, ndarray]) -> Union[float, list, ndarray]:
@@ -44,7 +44,7 @@ def dB2lin(value_dB: Union[float, list, ndarray]) -> Union[float, list, ndarray]
     :param value_dB: Value in dB
     :return: Linear value
     """
-    flag_convert = True if isinstance(value_dB, (float, list)) else False
+    flag_convert = True if isinstance(value_dB, (int, float, list)) else False
     value_dB = asanyarray(value_dB)
 
     return (10 ** (value_dB / 10)).tolist() if flag_convert else 10 ** (value_dB / 10)
@@ -57,10 +57,10 @@ def dBm2lin(value_dBm: Union[float, list, ndarray]) -> Union[float, list, ndarra
     :param value_dBm: Value in dBm
     :return: Linear value
     """
-    flag_convert = True if isinstance(value_dBm, (float, list)) else False
-    value_dBm = asanyarray(value_dBm)
+    flag_convert = True if isinstance(value_dBm, (int, float, list)) else False
+    value_lin = asanyarray(dB2lin(value_dBm)) * 1e-3
 
-    return (dB2lin(value_dBm) * 1e-3).tolist() if flag_convert else dB2lin(value_dBm) * 1e-3
+    return value_lin.tolist() if flag_convert else value_lin
 
 
 def wavelength2frequency(wavelength: Union[float, ndarray]) -> Union[float, ndarray]:
@@ -102,7 +102,7 @@ def delta_frequency2delta_wavelength(delta_f: float, frequency: float) -> float:
     :return: Change in wavelength in meters
     """
     wavelength = frequency2wavelength(frequency)
-    return delta_f * wavelength / frequency
+    return float(delta_f * wavelength / frequency)
 
 
 def delta_wavelength2delta_frequency(delta_wl: float, wavelength: float) -> float:
@@ -114,7 +114,7 @@ def delta_wavelength2delta_frequency(delta_wl: float, wavelength: float) -> floa
     :return: Change in frequency in Hz
     """
     frequency = wavelength2frequency(wavelength)
-    return delta_wl * frequency / wavelength
+    return float(delta_wl * frequency / wavelength)
 
 
 def convert_snr(snr_dB: Union[float, List[float], ndarray[Any, dtype]],
