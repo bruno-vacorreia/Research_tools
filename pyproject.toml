@@ -4,10 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "research_tools"
-version = "0.4.0"
+version = "0.5.0"
 description = "Set of tools to be used in scientific research projects."
 readme = "README.md"
 requires-python = ">=3.12"
+authors = [{ name = "Bruno Correia", email = "brunoviniciusac@gmail.com" }]
 dependencies = [
     "numpy",
     "scipy",
@@ -28,6 +29,12 @@ dev = [
     "pytest-cov",
     "ruff",
 ]
+
+[project.urls]
+Homepage = "https://github.com/bruno-vacorreia/Research_tools"
+Repository = "https://github.com/bruno-vacorreia/Research_tools"
+Issues = "https://github.com/bruno-vacorreia/Research_tools/issues"
+Contributors = "https://github.com/bruno-vacorreia/Research_tools/graphs/contributors"
 
 [tool.setuptools.packages.find]
 exclude = ["dump_data*", "tests*", "build*"]
