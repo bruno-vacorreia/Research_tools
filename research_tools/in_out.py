@@ -12,6 +12,7 @@ from os import makedirs, chmod, path, walk
 from pprint import pformat
 from pandas import read_csv, DataFrame, read_excel, ExcelWriter
 from numpy import squeeze, ndarray, load as load_np, save as save_np, random
+import json
 from json import load as load_json, dump as save_json
 from scipy.io import loadmat as load_mat, savemat as save_mat
 from shutil import rmtree, copy2, copytree
@@ -29,6 +30,9 @@ SAVE_DEFAULT_CSV_PARAMS = {'index': False, }
 
 SAVE_DEFAULT_JSON_PARAMS = {'indent': 2, }
 """Used by save() for .json when json_pretty_print is False."""
+
+SAVE_DEFAULT_WRAPPED_JSON_PARAMS = {'line_width': 120, 'indent_size': 2, 'depth': 0, 'wrap_brace': True, }
+"""Used by save() for .json when wrapped_opt is True."""
 
 SAVE_DEFAULT_PRETTY_PRINT_JSON_PARAMS = {'indent': 2, 'width': 120, 'compact': True, 'sort_dicts': False, }
 """Used by save() for .json when json_pretty_print is True."""
@@ -53,9 +57,6 @@ ZIP_FOLDER_DEFAULT_7ZFILE_PARAMS = {
 }
 """Used by zip_folder_and_content() for SevenZipFile when archive_format is .7z. Default is LZMA2 at preset 6
 (~balanced size vs speed); override via kwargs (e.g. filters, password, mp)."""
-
-PRETTY_PRINT_OPTION = True
-"""Default for json_pretty_print in save() when writing .json."""
 
 
 def _convert_json_bool_strings(obj: Union[dict, list, Any]) -> Union[dict, list, Any]:
@@ -169,8 +170,8 @@ def load(file_path: Union[Path, str], squeeze_arrays: bool = True, remove_matlab
 
 
 def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str, object],
-         json_pretty_print: bool = PRETTY_PRINT_OPTION, encoding: str = 'utf-8', overwrite: bool = True,
-         **kwargs) -> None:
+         wrapped_opt: bool = False, json_pretty_print: bool = True,
+         encoding: str = 'utf-8', overwrite: bool = True, **kwargs) -> None:
     """
     Save the main types of data used in our work.
     Using the default parameters of the respective save function, unless set different.
@@ -178,13 +179,19 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
 
     :param file_path: File path (Path or str).
     :param data: Data to save (dict, DataFrame, ndarray, str, or object for pickle).
-    :param json_pretty_print: If True, write .json with pformat-style pretty printing.
+    :param wrapped_opt: If True, write .json with indented objects and scalar arrays wrapped to ``line_width``.
+        Takes precedence over json_pretty_print.
+    :param json_pretty_print: If True, write .json with pformat-style pretty printing. Ignored when wrapped_opt
+        is True.
     :param encoding: Text encoding for .json, .csv, and .txt. Defaults to utf-8.
     :param overwrite: If False, raise FileExistsError when the file already exists. Defaults to True.
-    :param kwargs: Passed to the underlying save function (e.g. pandas, scipy).
+    :param kwargs: Passed to the underlying save function (e.g. pandas, scipy). For ``.json`` with wrapped_opt,
+        ``line_width`` and ``indent_size`` (and optional ``depth``, ``wrap_brace`` for advanced use) are merged
+        with :data:`SAVE_DEFAULT_WRAPPED_JSON_PARAMS`.
     :return: None
     :raises FileExistsError: If overwrite is False and the file already exists.
-    :raises TypeError: If the file extension is not supported
+    :raises TypeError: If the file extension is not supported, or if wrapped_opt is True but ``data`` is not a dict
+        after normalization.
     :raises OSError: On I/O errors when creating the parent directory or writing the file
     """
     file_path = Path(file_path) if isinstance(file_path, str) else file_path
@@ -198,12 +205,22 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
 
     if file_path.suffix in ['.json']:
         data = format_dict_json(data)
+        json_kwargs = {
+            key: value for key, value in kwargs.items() if key not in SAVE_DEFAULT_WRAPPED_JSON_PARAMS}
         with open(file_path, 'w', encoding=encoding) as file:
-            if not json_pretty_print:
-                save_json(obj=data, fp=file, **update_default_dict(SAVE_DEFAULT_JSON_PARAMS, kwargs))
+            if wrapped_opt:
+                if not isinstance(data, dict):
+                    raise TypeError('wrapped_opt requires a dict root value')
+                text = '\n'.join(_json_dict_lines(
+                    data, **update_default_dict(SAVE_DEFAULT_WRAPPED_JSON_PARAMS, kwargs)))
+                file.write(text)
+                file.write('\n')
+            elif not json_pretty_print:
+                save_json(obj=data, fp=file, **update_default_dict(SAVE_DEFAULT_JSON_PARAMS, json_kwargs))
             else:
                 # pformat outputs Python repr; convert to valid JSON (None->null, True->true, False->false, '->")
-                data_str = pformat(data, **update_default_dict(SAVE_DEFAULT_PRETTY_PRINT_JSON_PARAMS, kwargs))
+                data_str = pformat(
+                    data, **update_default_dict(SAVE_DEFAULT_PRETTY_PRINT_JSON_PARAMS, json_kwargs))
                 data_str = data_str.replace("'", '"')
                 data_str = data_str.replace(' None', ' null')
                 data_str = data_str.replace(' True', ' true')
@@ -246,6 +263,89 @@ def save(file_path: Union[Path, str], data: Union[dict, DataFrame, ndarray, str,
             save_pickle(obj=data, file=file)
     else:
         raise TypeError(f'Save function not implemented for "{file_path.suffix}" type')
+
+
+def _json_dict_lines(obj: dict, **kwargs) -> list[str]:
+    """
+    Build indented JSON lines for a dict, wrapping scalar arrays to ``line_width``.
+
+    :param obj: Mapping to serialize.
+    :param kwargs: Merged with :data:`SAVE_DEFAULT_WRAPPED_JSON_PARAMS` (``line_width``, ``indent_size``,
+        ``depth``, ``wrap_brace``).
+    :returns: List of text lines without trailing newlines.
+    """
+    params = update_default_dict(SAVE_DEFAULT_WRAPPED_JSON_PARAMS, kwargs)
+    depth = params['depth']
+    line_width = params['line_width']
+    indent_size = params['indent_size']
+    wrap_brace = params['wrap_brace']
+    close_pad = ' ' * (depth * indent_size)
+    key_pad = ' ' * ((depth + 1) * indent_size)
+    lines: list[str] = []
+    if wrap_brace:
+        lines.append(close_pad + '{')
+    items = list(obj.items())
+    for index, (key, value) in enumerate(items):
+        is_last = index == len(items) - 1
+        key_str = json.dumps(key, ensure_ascii=False)
+        if isinstance(value, dict):
+            lines.append(f'{key_pad}{key_str}: {{')
+            lines.extend(_json_dict_lines(
+                value, **update_default_dict(params, {'depth': depth + 1, 'wrap_brace': False})))
+            lines.append(f'{key_pad}}}{"" if is_last else ","}')
+        elif isinstance(value, list):
+            lines.append(f'{key_pad}{key_str}: [')
+            content_pad = ' ' * ((depth + 2) * indent_size)
+            lines.extend(_wrap_scalar_list_lines(value, content_pad, **params))
+            lines.append(f'{key_pad}]{"" if is_last else ","}')
+        else:
+            value_str = json.dumps(value, ensure_ascii=False)
+            lines.append(f'{key_pad}{key_str}: {value_str}{"" if is_last else ","}')
+    if wrap_brace:
+        lines.append(close_pad + '}')
+    return lines
+
+
+def _wrap_scalar_list_lines(items: list, content_pad: str, **kwargs) -> list[str]:
+    """
+    Wrap a list of JSON scalars into lines that respect ``line_width``.
+
+    :param items: List of JSON-serializable scalar values.
+    :param content_pad: Leading spaces for continuation lines.
+    :param kwargs: Merged with :data:`SAVE_DEFAULT_WRAPPED_JSON_PARAMS` (``line_width``).
+    :returns: Wrapped lines of comma-separated JSON literals.
+    :raises TypeError: If an element is not a JSON scalar.
+    """
+    params = update_default_dict(SAVE_DEFAULT_WRAPPED_JSON_PARAMS, kwargs)
+    line_width = params['line_width']
+    lines: list[str] = []
+    current_parts: list[str] = []
+    current_len = len(content_pad)
+
+    def flush(trailing_comma: bool) -> None:
+        nonlocal current_parts, current_len
+        if current_parts:
+            line = content_pad + ', '.join(current_parts)
+            if trailing_comma:
+                line += ','
+            lines.append(line)
+            current_parts = []
+            current_len = len(content_pad)
+
+    for item in items:
+        if isinstance(item, (dict, list)):
+            raise TypeError('Wrapped JSON only supports scalar arrays')
+        piece = json.dumps(item, ensure_ascii=False)
+        add_len = len(piece) + (2 if current_parts else 0)
+        if current_parts and current_len + add_len > line_width:
+            flush(trailing_comma=True)
+        if not current_parts:
+            current_len = len(content_pad) + len(piece)
+        else:
+            current_len += 2 + len(piece)
+        current_parts.append(piece)
+    flush(trailing_comma=False)
+    return lines
 
 
 def get_or_create_folder(folder_path: Union[Path, str]) -> Path:
